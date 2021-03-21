@@ -1681,7 +1681,8 @@ renderclients(Monitor *m, struct timespec *now)
 	wl_list_for_each_reverse(c, &stack, slink) {
 		/* Only render visible clients which show on this monitor */
 		if (!VISIBLEON(c, c->mon) || !wlr_output_layout_intersects(
-					output_layout, m->wlr_output, &c->geom))
+					output_layout, m->wlr_output, &c->geom) || 
+					(selmon->lt[selmon->sellt]->arrange == monocle && c != sel))
 			continue;
 
 		surface = client_surface(c);
