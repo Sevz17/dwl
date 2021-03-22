@@ -479,6 +479,8 @@ applyrules(Client *c)
 					mon = m;
 		}
 	}
+	c->geom.x = (mon->w.width - c->geom.width) / 2;
+	c->geom.y = (mon->w.height - c->geom.height) / 2;
 	setmon(c, mon, newtags);
 }
 

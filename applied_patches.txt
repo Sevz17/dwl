@@ -1,2 +1,3 @@
 hide-behind-monocle
 unclutter
+alwayscenter
