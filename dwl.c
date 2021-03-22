@@ -240,6 +240,8 @@ static void focusstack(const Arg *arg);
 static void fullscreennotify(struct wl_listener *listener, void *data);
 static Client *focustop(Monitor *m);
 static void getxdecomode(struct wl_listener *listener, void *data);
+static void handlecursoractivity();
+static int hidecursor(void *data);
 static void incnmaster(const Arg *arg);
 static void inputdevice(struct wl_listener *listener, void *data);
 static int keybinding(uint32_t mods, xkb_keysym_t sym);
@@ -322,6 +324,8 @@ static struct wlr_xcursor_manager *cursor_mgr;
 static struct wlr_xcursor *xcursor;
 static struct wlr_xcursor_manager *xcursor_mgr;
 #endif
+static struct wl_event_source *hide_source;
+static bool cursor_hidden = false;
 
 static struct wlr_seat *seat;
 static struct wl_list keyboards;
@@ -621,6 +625,7 @@ axisnotify(struct wl_listener *listener, void *data)
 	/* This event is forwarded by the cursor when a pointer emits an axis event,
 	 * for example when you move the scroll wheel. */
 	struct wlr_event_pointer_axis *event = data;
+	handlecursoractivity();
 	wlr_idle_notify_activity(idle, seat);
 	/* Notify the client with pointer focus of the axis event. */
 	wlr_seat_pointer_notify_axis(seat,
@@ -638,6 +643,7 @@ buttonpress(struct wl_listener *listener, void *data)
 	const Button *b;
 
 	wlr_idle_notify_activity(idle, seat);
+	handlecursoractivity();
 
 	switch (event->state) {
 	case WLR_BUTTON_PRESSED:;
@@ -1194,6 +1200,25 @@ getxdecomode(struct wl_listener *listener, void *data)
 }
 
 void
+handlecursoractivity()
+{
+	wl_event_source_timer_update(hide_source, cursor_inactive);
+	if (cursor_hidden) {
+		wlr_xcursor_manager_set_cursor_image(cursor_mgr, "left_ptr", cursor);
+		cursor_hidden = false;
+	}
+}
+
+int
+hidecursor(void *data)
+{
+	wlr_cursor_set_image(cursor, NULL, 0, 0, 0, 0, 0, 0);
+	wlr_seat_pointer_notify_clear_focus(seat);
+	cursor_hidden = true;
+	return 1;
+}
+
+void
 incnmaster(const Arg *arg)
 {
 	selmon->nmaster = MAX(selmon->nmaster + arg->i, 0);
@@ -1375,6 +1400,8 @@ motionnotify(uint32_t time)
 	double sx = 0, sy = 0;
 	struct wlr_surface *surface = NULL;
 	Client *c = NULL;
+
+	handlecursoractivity();
 
 	// time is 0 in internal calls meant to restore pointer focus.
 	if (time) {
@@ -1835,6 +1862,7 @@ run(char *startup_cmd)
 	 * monitor when displayed here */
 	wlr_cursor_warp_closest(cursor, NULL, cursor->x, cursor->y);
 	wlr_xcursor_manager_set_cursor_image(cursor_mgr, "left_ptr", cursor);
+	handlecursoractivity();
 
 	/* Set the WAYLAND_DISPLAY environment variable to our socket and run the
 	 * startup command if requested. */
@@ -2086,6 +2114,9 @@ setup(void)
 	wl_signal_add(&cursor->events.button, &cursor_button);
 	wl_signal_add(&cursor->events.axis, &cursor_axis);
 	wl_signal_add(&cursor->events.frame, &cursor_frame);
+
+	hide_source = wl_event_loop_add_timer(wl_display_get_event_loop(dpy),
+			hidecursor, cursor);
 
 	/*
 	 * Configures a seat, which is a single "seat" at which a user sits and
