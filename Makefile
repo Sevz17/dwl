@@ -52,10 +52,24 @@ dwl.o: config.h client.h xdg-shell-protocol.h wlr-layer-shell-unstable-v1-protoc
 dwl: xdg-shell-protocol.o wlr-layer-shell-unstable-v1-protocol.o idle-protocol.o
 
 clean:
-	rm -f dwl *.o *-protocol.h *-protocol.c
+	rm -f dwl *.o *-protocol.h *-protocol.c dwl-$(VERSION).tar.gz
 
 install: dwl
-	install -D dwl $(PREFIX)/bin/dwl
+	mkdir -p $(DESTDIR)$(PREFIX)/bin
+	cp -f dwl $(DESTDIR)$(PREFIX)/bin
+	chmod 755 ${DESTDIR}${PREFIX}/bin/dwl
+
+uninstall:
+	rm -f $(DESTDIR)$(PREFIX)/bin/dwl
+
+dist: clean
+	mkdir -p dwl-$(VERSION)
+	cp -R LICENSE LICENSE.dwm LICENSE.tinywl README.md config.def.h \
+		config.mk dwl.c client.h Makefile applied_patches.txt protocols \
+		dwl-$(VERSION)
+	tar -cf dwl-$(VERSION).tar dwl-$(VERSION)
+	gzip dwl-$(VERSION).tar
+	rm -rf dwl-$(VERSION)
 
 .DEFAULT_GOAL=dwl
 .PHONY: clean

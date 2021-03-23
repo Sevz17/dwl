@@ -1,3 +1,6 @@
+# dwl version
+VERSION = 0.2
+
 # paths
 PREFIX = /usr/local
 
