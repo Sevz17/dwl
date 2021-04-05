@@ -944,6 +944,8 @@ createkeyboard(struct wlr_input_device *device)
 {
 	struct xkb_context *context;
 	struct xkb_keymap *keymap;
+	uint32_t leds = 0;
+	xkb_mod_mask_t locked_mods = 0;
 	Keyboard *kb = device->data = ecalloc(1, sizeof(*kb));
 	kb->device = device;
 
@@ -963,6 +965,34 @@ createkeyboard(struct wlr_input_device *device)
 	LISTEN(&device->events.destroy, &kb->destroy, cleanupkeyboard);
 
 	wlr_seat_set_keyboard(seat, device);
+
+	if (numlock) {
+		xkb_mod_index_t mod_index = xkb_keymap_mod_get_index(keymap, XKB_MOD_NAME_NUM);
+		if (mod_index != XKB_MOD_INVALID) {
+			locked_mods |= (uint32_t)1 << mod_index;
+		}
+	}
+
+	if (capslock) {
+		xkb_mod_index_t mod_index = xkb_keymap_mod_get_index(keymap, XKB_MOD_NAME_CAPS);
+		if (mod_index != XKB_MOD_INVALID) {
+			locked_mods |= (uint32_t)1 << mod_index;
+		}
+	}
+
+	if (locked_mods) {
+		wlr_keyboard_notify_modifiers(device->keyboard, 0, 0,
+			locked_mods, 0);
+
+		for (uint32_t i = 0; i < WLR_LED_COUNT; ++i) {
+			if (xkb_state_led_index_is_active(
+					device->keyboard->xkb_state,
+					device->keyboard->led_indexes[i])) {
+				leds |= (1 << i);
+			}
+		}
+		wlr_keyboard_led_update(device->keyboard, leds);
+	}
 
 	/* And add the keyboard to our list of keyboards */
 	wl_list_insert(&keyboards, &kb->link);
