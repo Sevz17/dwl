@@ -14,6 +14,7 @@
 #include <wayland-server-core.h>
 #include <wlr/backend.h>
 #include <wlr/backend/libinput.h>
+#include <wlr/interfaces/wlr_keyboard.h>
 #include <wlr/render/allocator.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_compositor.h>
@@ -784,6 +785,8 @@ createkeyboard(struct wlr_keyboard *keyboard)
 {
 	struct xkb_context *context;
 	struct xkb_keymap *keymap;
+	uint32_t leds = 0;
+	xkb_mod_mask_t locked_mods = 0;
 	Keyboard *kb = keyboard->data = ecalloc(1, sizeof(*kb));
 	kb->wlr_keyboard = keyboard;
 
@@ -803,6 +806,34 @@ createkeyboard(struct wlr_keyboard *keyboard)
 	LISTEN(&keyboard->base.events.destroy, &kb->destroy, cleanupkeyboard);
 
 	wlr_seat_set_keyboard(seat, keyboard);
+
+	if (numlock) {
+		xkb_mod_index_t mod_index = xkb_keymap_mod_get_index(keymap, XKB_MOD_NAME_NUM);
+		if (mod_index != XKB_MOD_INVALID) {
+			locked_mods |= (uint32_t)1 << mod_index;
+		}
+	}
+
+	if (capslock) {
+		xkb_mod_index_t mod_index = xkb_keymap_mod_get_index(keymap, XKB_MOD_NAME_CAPS);
+		if (mod_index != XKB_MOD_INVALID) {
+			locked_mods |= (uint32_t)1 << mod_index;
+		}
+	}
+
+	if (locked_mods) {
+		wlr_keyboard_notify_modifiers(keyboard, 0, 0,
+			locked_mods, 0);
+
+		for (uint32_t i = 0; i < WLR_LED_COUNT; ++i) {
+			if (xkb_state_led_index_is_active(
+					keyboard->xkb_state,
+					keyboard->led_indexes[i])) {
+				leds |= (1 << i);
+			}
+		}
+		wlr_keyboard_led_update(keyboard, leds);
+	}
 
 	/* And add the keyboard to our list of keyboards */
 	wl_list_insert(&keyboards, &kb->link);
