@@ -473,6 +473,8 @@ applyrules(Client *c)
 		}
 	}
 	wlr_scene_node_for_each_buffer(&c->scene_surface->node, scenebuffersetopacity, c);
+	c->geom.x = mon ? (mon->w.width - c->geom.width) / 2 + mon->m.x : 0;
+	c->geom.y = mon ? (mon->w.height - c->geom.height) / 2 + mon->m.y : 0;
 	wlr_scene_node_reparent(&c->scene->node, layers[c->isfloating ? LyrFloat : LyrTile]);
 	setmon(c, mon, newtags);
 }
@@ -1744,6 +1746,10 @@ mapnotify(struct wl_listener *listener, void *data)
 	if (c->type == XDGShell && (p = client_get_parent(c))) {
 		c->isfloating = 1;
 		wlr_scene_node_reparent(&c->scene->node, layers[LyrFloat]);
+		if (p->mon) {
+			c->geom.x = (p->mon->w.width - c->geom.width) / 2 + p->mon->m.x;
+			c->geom.y = (p->mon->w.height - c->geom.height) / 2 + p->mon->m.y;
+		}
 		setmon(c, p->mon, p->tags);
 	} else {
 		applyrules(c);
