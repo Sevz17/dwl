@@ -519,6 +519,8 @@ applyrules(Client *c)
 					mon = m;
 		}
 	}
+	c->geom.x = (mon->w.width - c->geom.width) / 2 + mon->m.x;
+	c->geom.y = (mon->w.height - c->geom.height) / 2 + mon->m.y;
 	wlr_scene_node_reparent(c->scene, layers[c->isfloating ? LyrFloat : LyrTile]);
 	setmon(c, mon, newtags);
 }
@@ -1667,6 +1669,8 @@ mapnotify(struct wl_listener *listener, void *data)
 		c->isfloating = 1;
 		wlr_scene_node_reparent(c->scene, layers[LyrFloat]);
 		setmon(c, p->mon, p->tags);
+		c->geom.x = (c->mon->w.width - c->geom.width) / 2 + c->mon->m.x;
+		c->geom.y = (c->mon->w.height - c->geom.height) / 2 + c->mon->m.y;
 	} else {
 		applyrules(c);
 	}
