@@ -32,6 +32,7 @@
 #include <wlr/types/wlr_primary_selection.h>
 #include <wlr/types/wlr_primary_selection_v1.h>
 #include <wlr/types/wlr_screencopy_v1.h>
+#include <wlr/types/wlr_server_decoration.h>
 #include <wlr/types/wlr_seat.h>
 #include <wlr/types/wlr_viewporter.h>
 #include <wlr/types/wlr_virtual_keyboard_v1.h>
@@ -95,6 +96,7 @@ typedef struct {
 	struct wl_listener map;
 	struct wl_listener unmap;
 	struct wl_listener destroy;
+	struct wl_listener set_title;
 	struct wl_listener fullscreen;
 	struct wlr_box geom;  /* layout-relative, includes border */
 	Monitor *mon;
@@ -230,19 +232,16 @@ static void createmon(struct wl_listener *listener, void *data);
 static void createnotify(struct wl_listener *listener, void *data);
 static void createlayersurface(struct wl_listener *listener, void *data);
 static void createpointer(struct wlr_input_device *device);
-static void createxdeco(struct wl_listener *listener, void *data);
 static void cursorframe(struct wl_listener *listener, void *data);
 static void cyclelayout(const Arg *arg);
 static void destroylayersurfacenotify(struct wl_listener *listener, void *data);
 static void destroynotify(struct wl_listener *listener, void *data);
-static void destroyxdeco(struct wl_listener *listener, void *data);
 static Monitor *dirtomon(enum wlr_direction dir);
 static void focusclient(Client *c, int lift);
 static void focusmon(const Arg *arg);
 static void focusstack(const Arg *arg);
 static void fullscreennotify(struct wl_listener *listener, void *data);
 static Client *focustop(Monitor *m);
-static void getxdecomode(struct wl_listener *listener, void *data);
 static void handlecursoractivity();
 static int hidecursor(void *data);
 static void incnmaster(const Arg *arg);
@@ -295,6 +294,7 @@ static void unmaplayersurface(LayerSurface *layersurface);
 static void unmaplayersurfacenotify(struct wl_listener *listener, void *data);
 static void unmapnotify(struct wl_listener *listener, void *data);
 static void updatemons(struct wl_listener *listener, void *data);
+static void updatetitle(struct wl_listener *listener, void *data);
 static void view(const Arg *arg);
 static void virtualkeyboard(struct wl_listener *listener, void *data);
 static Client *xytoclient(double x, double y);
@@ -317,7 +317,6 @@ static struct wl_list stack;   /* stacking z-order */
 static struct wl_list independents;
 static struct wlr_idle *idle;
 static struct wlr_layer_shell_v1 *layer_shell;
-static struct wlr_xdg_decoration_manager_v1 *xdeco_mgr;
 static struct wlr_output_manager_v1 *output_mgr;
 static struct wlr_virtual_keyboard_manager_v1 *virtual_keyboard_mgr;
 
@@ -351,7 +350,6 @@ static struct wl_listener layout_change = {.notify = updatemons};
 static struct wl_listener new_input = {.notify = inputdevice};
 static struct wl_listener new_virtual_keyboard = {.notify = virtualkeyboard};
 static struct wl_listener new_output = {.notify = createmon};
-static struct wl_listener new_xdeco = {.notify = createxdeco};
 static struct wl_listener new_xdg_surface = {.notify = createnotify};
 static struct wl_listener new_layer_shell_surface = {.notify = createlayersurface};
 static struct wl_listener output_mgr_apply = {.notify = outputmgrapply};
@@ -957,6 +955,7 @@ createnotify(struct wl_listener *listener, void *data)
 	LISTEN(&xdg_surface->events.map, &c->map, mapnotify);
 	LISTEN(&xdg_surface->events.unmap, &c->unmap, unmapnotify);
 	LISTEN(&xdg_surface->events.destroy, &c->destroy, destroynotify);
+	LISTEN(&xdg_surface->toplevel->events.set_title, &c->set_title, updatetitle);
 	LISTEN(&xdg_surface->toplevel->events.request_fullscreen, &c->fullscreen,
 			fullscreennotify);
 	c->isfullscreen = 0;
@@ -1024,18 +1023,6 @@ createpointer(struct wlr_input_device *device)
 }
 
 void
-createxdeco(struct wl_listener *listener, void *data)
-{
-	struct wlr_xdg_toplevel_decoration_v1 *wlr_deco = data;
-	Decoration *d = wlr_deco->data = calloc(1, sizeof(*d));
-
-	LISTEN(&wlr_deco->events.request_mode, &d->request_mode, getxdecomode);
-	LISTEN(&wlr_deco->events.destroy, &d->destroy, destroyxdeco);
-
-	getxdecomode(&d->request_mode, wlr_deco);
-}
-
-void
 cursorframe(struct wl_listener *listener, void *data)
 {
 	/* This event is forwarded by the cursor when a pointer emits an frame
@@ -1092,6 +1079,7 @@ destroynotify(struct wl_listener *listener, void *data)
 	wl_list_remove(&c->map.link);
 	wl_list_remove(&c->unmap.link);
 	wl_list_remove(&c->destroy.link);
+	wl_list_remove(&c->set_title.link);
 	wl_list_remove(&c->fullscreen.link);
 #ifdef XWAYLAND
 	if (c->type == X11Managed)
@@ -1100,17 +1088,6 @@ destroynotify(struct wl_listener *listener, void *data)
 #endif
 		wl_list_remove(&c->commit.link);
 	free(c);
-}
-
-void
-destroyxdeco(struct wl_listener *listener, void *data)
-{
-	struct wlr_xdg_toplevel_decoration_v1 *wlr_deco = data;
-	Decoration *d = wlr_deco->data;
-
-	wl_list_remove(&d->destroy.link);
-	wl_list_remove(&d->request_mode.link);
-	free(d);
 }
 
 void
@@ -1268,14 +1245,6 @@ focustop(Monitor *m)
 }
 
 void
-getxdecomode(struct wl_listener *listener, void *data)
-{
-	struct wlr_xdg_toplevel_decoration_v1 *wlr_deco = data;
-	wlr_xdg_toplevel_decoration_v1_set_mode(wlr_deco,
-			WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
-}
-
-void
 handlecursoractivity()
 {
 	wl_event_source_timer_update(hide_source, cursor_inactive);
@@ -1372,7 +1341,7 @@ keypress(struct wl_listener *listener, void *data)
 	wlr_idle_notify_activity(idle, seat);
 
 	/* On _press_, attempt to process a compositor keybinding. */
-	if (event->state == WLR_KEY_PRESSED)
+	if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED)
 		for (i = 0; i < nsyms; i++)
 			handled = keybinding(mods, syms[i]) || handled;
 
@@ -2102,7 +2071,7 @@ setup(void)
 	 * backend uses the renderer, for example, to fall back to software cursors
 	 * if the backend does not support hardware cursors (some older GPUs
 	 * don't). */
-	if (!(backend = wlr_backend_autocreate(dpy, NULL)))
+	if (!(backend = wlr_backend_autocreate(dpy)))
 		BARF("couldn't create backend");
 
 	/* If we don't provide a renderer, autocreate makes a GLES2 renderer for us.
@@ -2156,9 +2125,11 @@ setup(void)
 	xdg_shell = wlr_xdg_shell_create(dpy);
 	wl_signal_add(&xdg_shell->events.new_surface, &new_xdg_surface);
 
-	/* Use xdg_decoration protocol to negotiate server-side decorations */
-	xdeco_mgr = wlr_xdg_decoration_manager_v1_create(dpy);
-	wl_signal_add(&xdeco_mgr->events.new_toplevel_decoration, &new_xdeco);
+	/* Use decoration protocols to negotiate server-side decorations */
+	wlr_server_decoration_manager_set_default_mode(
+			wlr_server_decoration_manager_create(dpy),
+			WLR_SERVER_DECORATION_MANAGER_MODE_SERVER);
+	wlr_xdg_decoration_manager_v1_create(dpy);
 
 	/*
 	 * Creates a cursor, which is a wlroots utility for tracking the cursor
@@ -2454,6 +2425,14 @@ updatemons(struct wl_listener *listener, void *data)
 }
 
 void
+updatetitle(struct wl_listener *listener, void *data)
+{
+	Client *c = wl_container_of(listener, c, set_title);
+	if (c == focustop(c->mon))
+		printstatus();
+}
+
+void
 view(const Arg *arg)
 {
 	int i;
@@ -2612,6 +2591,7 @@ createnotifyx11(struct wl_listener *listener, void *data)
 			activatex11);
 	LISTEN(&xwayland_surface->events.request_configure, &c->configure,
 			configurex11);
+	LISTEN(&xwayland_surface->events.set_title, &c->set_title, updatetitle);
 	LISTEN(&xwayland_surface->events.destroy, &c->destroy, destroynotify);
 	LISTEN(&xwayland_surface->events.request_fullscreen, &c->fullscreen,
 			fullscreennotify);
