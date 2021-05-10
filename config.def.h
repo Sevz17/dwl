@@ -1,9 +1,17 @@
 /* appearance */
 static const int sloppyfocus        = 1;  /* focus follows mouse */
 static const unsigned int borderpx  = 2;  /* border pixel of windows */
+static const unsigned int gappih    = 6;  /* horiz inner gap between windows */
+static const unsigned int gappiv    = 6;  /* vert inner gap between windows */
+static const unsigned int gappoh    = 6;  /* horiz outer gap between windows and screen edge */
+static const unsigned int gappov    = 6;  /* vert outer gap between windows and screen edge */
+static const int smartgaps          = 1;  /* 1 means no outer gap when there is only one window */
+static const int smartborders       = 1;  /* 1 means no borders when there is only one window */
+static unsigned int enableoutergaps = 0;  /* 0 means no outer gaps */
+static unsigned int enableinnergaps = 1;  /* 0 means no inner gaps */
 static const float rootcolor[]      = {0.3, 0.3, 0.3, 1.0};
-static const float focuscolor[]    = {0.4, 0.0, 1.0, 1.0};
-static const float bordercolor[]     = {0.0, 0.0, 0.0, 0.7};
+static const float focuscolor[]     = {0.4, 0.0, 1.0, 1.0};
+static const float bordercolor[]    = {0.0, 0.0, 0.0, 0.7};
 
 /* tagging */
 static const char *tags[] = { " ", "﬏ ", " ", " ", " ", " ", " ", " ", " ", " " };
@@ -58,6 +66,8 @@ static const int repeat_delay = 600;
 
 /* Time (in miliseconds) until the cursor will hidde */
 static const int cursor_inactive = 1000;
+
+static const int hide_cursor = 0;
 
 /* Disable acceleration */
 static const int disable_mouse_acceleration = 1;
@@ -170,10 +180,45 @@ static const Key keys[] = {
     /* ----------------- Hardware ------------------ */
 
     /* Volume */
-    {MODKEY,                     XKB_KEY_apostrophe, spawn,          SHCMD("pactl set-sink-volume @DEFAULT_SINK@ -2%")},
-    {MODKEY,                     XKB_KEY_questiondown,spawn,         SHCMD("pactl set-sink-volume @DEFAULT_SINK@ +2%")},
-    {MODKEY,                     XKB_KEY_BackSpace,  spawn,          SHCMD("pactl set-sink-mute @DEFAULT_SINK@ toggle")},
+    { MODKEY,                     XKB_KEY_apostrophe, spawn,          SHCMD("pactl set-sink-volume @DEFAULT_SINK@ -2%")},
+    { MODKEY,                     XKB_KEY_questiondown,spawn,         SHCMD("pactl set-sink-volume @DEFAULT_SINK@ +2%")},
+    { MODKEY,                     XKB_KEY_BackSpace,  spawn,          SHCMD("pactl set-sink-mute @DEFAULT_SINK@ toggle")},
 
+	/* -------------------- Gaps ------------------- */
+
+	/* Increase - decrease all gaps */
+	{ MODKEY,                    XKB_KEY_i,          incrgaps,       {.i = +1 } },
+	{ MODKEY|Shift,              XKB_KEY_I,          incrgaps,       {.i = -1 } },
+
+	/* Restore - toggle gaps */
+	{ MODKEY|ALTKEY,             XKB_KEY_i,          defaultgaps,    {0} },
+	{ MODKEY|Control,            XKB_KEY_i,          togglegaps,     {0} },
+	{ MODKEY|Control,            XKB_KEY_h,          toggleoutergaps,{0} },
+	{ MODKEY|Control,            XKB_KEY_f,          toggleinnergaps,{0} },
+
+	/* Increase - decrease inner gaps */
+	{ ALTKEY|Shift,    XKB_KEY_T,      incrigaps,      {.i = +1 } },
+	{ ALTKEY|Shift,    XKB_KEY_R,      incrigaps,      {.i = -1 } },
+
+	/* Increase - decrease inner vertical gaps */
+	{ MODKEY,          XKB_KEY_f,          incrivgaps,     {.i = +1 } },
+	{ MODKEY|Shift,    XKB_KEY_F,          incrivgaps,     {.i = -1 } },
+
+	/* Increase - decrease inner horizontal gaps */
+	{ MODKEY,          XKB_KEY_h,          incrihgaps,     {.i = +1 } },
+	{ MODKEY|Shift,    XKB_KEY_H,          incrihgaps,     {.i = -1 } },
+
+	/* Increase - decrease outer gaps */
+	{ ALTKEY|Shift,    XKB_KEY_D,          incrogaps,      {.i = +1 } },
+	{ ALTKEY|Shift,    XKB_KEY_N,          incrogaps,      {.i = -1 } },
+
+	/* Increase - decrease outer vertical gaps */
+	{ ALTKEY,          XKB_KEY_F,          incrovgaps,     {.i = -1 } },
+	{ ALTKEY|Shift,    XKB_KEY_F,          incrovgaps,     {.i = +1 } },
+
+	/* Increase - decrease outer horizontal gaps */
+	{ ALTKEY,          XKB_KEY_h,          incrohgaps,     {.i = +1 } },
+	{ ALTKEY|Shift,    XKB_KEY_H,          incrohgaps,     {.i = -1 } },
 
 	/* Ctrl-Alt-Backspace and Ctrl-Alt-Fx used to be handled by X server */
 	{ WLR_MODIFIER_CTRL|WLR_MODIFIER_ALT,XKB_KEY_Terminate_Server, quit, {0} },

@@ -2,3 +2,4 @@ hide-behind-monocle
 unclutter
 alwayscenter
 cyclelayout
+vanitygaps
