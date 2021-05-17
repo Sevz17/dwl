@@ -4,15 +4,17 @@ static const unsigned int borderpx  = 1;  /* border pixel of windows */
 static const float rootcolor[]      = {0.3, 0.3, 0.3, 1.0};
 static const float bordercolor[]    = {0.5, 0.5, 0.5, 1.0};
 static const float focuscolor[]     = {1.0, 0.0, 0.0, 1.0};
+static const double default_alpha   = 0.75;
 
 /* tagging */
 static const char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
 
 static const Rule rules[] = {
-	/* app_id     title       tags mask     isfloating   monitor */
+	/* app_id     title       tags mask     isfloating   alpha           monitor */
 	/* examples:
-	{ "Gimp",     NULL,       0,            1,           -1 },
-	{ "firefox",  NULL,       1 << 8,       0,           -1 },
+	{ "Gimp",     NULL,       0,            1,           default_alpha   -1 },
+	{ "firefox",  NULL,       1 << 8,       0,           default_alpha   -1 },
+	{ "Alacritty",NULL,       1 << 2,       0,           1.0             -1 },
 	*/
 };
 
@@ -76,6 +78,8 @@ static const Key keys[] = {
 	{ MODKEY,                    XKB_KEY_d,          incnmaster,     {.i = -1} },
 	{ MODKEY,                    XKB_KEY_h,          setmfact,       {.f = -0.05} },
 	{ MODKEY,                    XKB_KEY_l,          setmfact,       {.f = +0.05} },
+	{ MODKEY,                    XKB_KEY_o,          changealpha,    {.f = +0.1} },
+	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_O,          changealpha,    {.f = -0.1} },
 	{ MODKEY,                    XKB_KEY_Return,     zoom,           {0} },
 	{ MODKEY,                    XKB_KEY_Tab,        view,           {0} },
 	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_C,          killclient,     {0} },
