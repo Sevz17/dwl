@@ -12,15 +12,17 @@ static unsigned int enableinnergaps = 1;  /* 0 means no inner gaps */
 static const float rootcolor[]      = {0.3, 0.3, 0.3, 1.0};
 static const float focuscolor[]     = {0.4, 0.0, 1.0, 1.0};
 static const float bordercolor[]    = {0.0, 0.0, 0.0, 0.7};
+static const double default_alpha   = 0.75;
 
 /* tagging */
 static const char *tags[] = { " ", "﬏ ", " ", " ", " ", " ", " ", " ", " ", " " };
 
 static const Rule rules[] = {
-	/* app_id     title       tags mask     isfloating   monitor */
+	/* app_id     title       tags mask     isfloating   alpha           monitor */
 	/* examples:
-	{ "Gimp",     NULL,       0,            1,           -1 },
-	{ "firefox",  NULL,       1 << 8,       0,           -1 },
+	{ "Gimp",     NULL,       0,            1,           default_alpha   -1 },
+	{ "firefox",  NULL,       1 << 8,       0,           default_alpha   -1 },
+	{ "Alacritty",NULL,       1 << 2,       0,           1.0             -1 },
 	*/
 };
 
@@ -127,6 +129,9 @@ static const Key keys[] = {
 	/* Send window to next - prev monitor */
 	{ MODKEY|Shift,              XKB_KEY_W,          tagmon,         {.i = WLR_DIRECTION_LEFT} },
 	{ MODKEY|Shift,              XKB_KEY_V,          tagmon,         {.i = WLR_DIRECTION_RIGHT} },
+
+	{ MODKEY,                    XKB_KEY_o,          changealpha,    {.f = +0.1} },
+	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_O,          changealpha,    {.f = -0.1} },
 
 	/* Kill window */
 	{ MODKEY,                    XKB_KEY_comma,      killclient,     {0} },
