@@ -907,10 +907,6 @@ createnotify(struct wl_listener *listener, void *data)
 	c->bw = borderpx;
 	c->alpha = default_alpha;
 
-	/* Tell the client not to try anything fancy */
-	wlr_xdg_toplevel_set_tiled(c->surface.xdg, WLR_EDGE_TOP |
-			WLR_EDGE_BOTTOM | WLR_EDGE_LEFT | WLR_EDGE_RIGHT);
-
 	LISTEN(&xdg_surface->surface->events.commit, &c->commit, commitnotify);
 	LISTEN(&xdg_surface->events.map, &c->map, mapnotify);
 	LISTEN(&xdg_surface->events.unmap, &c->unmap, unmapnotify);
@@ -1333,6 +1329,9 @@ mapnotify(struct wl_listener *listener, void *data)
 	client_get_geometry(c, &c->geom);
 	c->geom.width += 2 * c->bw;
 	c->geom.height += 2 * c->bw;
+
+	/* Tell the client not to try anything fancy */
+	client_set_tiled(c, WLR_EDGE_TOP | WLR_EDGE_BOTTOM | WLR_EDGE_LEFT | WLR_EDGE_RIGHT);
 
 	/* Set initial monitor, tags, floating status, and focus */
 	applyrules(c);
