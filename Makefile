@@ -55,9 +55,6 @@ idle-protocol.c:
 
 idle-protocol.o: idle-protocol.h
 
-config.h: | config.def.h
-	cp config.def.h $@
-
-dwl.o: config.mk config.h client.h xdg-shell-protocol.h wlr-layer-shell-unstable-v1-protocol.h idle-protocol.h
+dwl.o: config.mk config.def.h client.h xdg-shell-protocol.h wlr-layer-shell-unstable-v1-protocol.h idle-protocol.h
 
 dwl: xdg-shell-protocol.o wlr-layer-shell-unstable-v1-protocol.o idle-protocol.o

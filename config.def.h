@@ -24,13 +24,15 @@ static const Rule rules[] = {
 	{ "firefox",  NULL,       1 << 8,       0,           default_alpha   -1 },
 	{ "Alacritty",NULL,       1 << 2,       0,           1.0             -1 },
 	*/
+	{"Alacritty", NULL,       1<<2,         0,           1.0,            -1},
+	{"foot",      NULL,       1<<2,         0,           1.0,            -1},
 };
 
 /* layout(s) */
 static const Layout layouts[] = {
 	/* symbol     arrange function */
-	{ "[]=",      tile },
-	{ "><>",      NULL },    /* no layout function means floating behavior */
+	{ "[T]",      tile },
+	{ "[F]",      NULL },    /* no layout function means floating behavior */
 	{ "[M]",      monocle },
 	{ NULL,       NULL },
 };
@@ -93,8 +95,14 @@ static const int natural_scrolling = 0;
 #define SHCMD(cmd) { .v = (const char*[]){ "/bin/sh", "-c", cmd, NULL } }
 
 /* commands */
-static const char *termcmd[] = { "alacritty", NULL };
-static const char *menucmd[] = { "bemenu-run", NULL };
+static const char *termcmd[] = { "foot", NULL };
+static const char *menucmd[] = {
+	"wofi",
+	"--show=drun",
+	"--lines=10",
+	"--allow-images",
+	NULL
+};
 
 static const Key keys[] = {
 	/* Note that Shift changes certain key codes: c -> C, 2 -> at, etc. */
@@ -130,8 +138,9 @@ static const Key keys[] = {
 	{ MODKEY|Shift,              XKB_KEY_W,          tagmon,         {.i = WLR_DIRECTION_LEFT} },
 	{ MODKEY|Shift,              XKB_KEY_V,          tagmon,         {.i = WLR_DIRECTION_RIGHT} },
 
-	{ MODKEY,                    XKB_KEY_o,          changealpha,    {.f = +0.1} },
-	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_O,          changealpha,    {.f = -0.1} },
+    // Change opacity for clients
+	{ MODKEY|ShiftMask,          XKB_KEY_KP_Add,     changealpha,    {.f = +0.1}},
+	{ MODKEY|ShiftMask,          XKB_KEY_KP_Subtract,changealpha,    {.f = -0.1}},
 
 	/* Kill window */
 	{ MODKEY,                    XKB_KEY_comma,      killclient,     {0} },
@@ -143,16 +152,16 @@ static const Key keys[] = {
 //	{ MODKEY|Control,            XKB_KEY_p,          quit,           {1} },
 
     /* Shutdown computer */
-    { ALTKEY|Control,            XKB_KEY_Delete,     spawn,          SHCMD("shutdown now") },
+    { ALTKEY|Control,            XKB_KEY_Delete,     spawn,          SHCMD("loginctl poweroff || systemctl poweroff") },
 
     /* Restart computer */
-    { ALTKEY|Control,            XKB_KEY_Insert,     spawn,          SHCMD("reboot") },
+    { ALTKEY|Control,            XKB_KEY_Insert,     spawn,          SHCMD("loginctl reboot || systemctl reboot") },
 
     /* Hibernate computer */
-    { MODKEY|Control,            XKB_KEY_Delete,     spawn,          SHCMD("systemctl hibernate") },
+    { MODKEY|Control,            XKB_KEY_Delete,     spawn,          SHCMD("loginctl hibernate || systemctl hibernate") },
 
     /* Suspend computer */
-    { MODKEY|Control,            XKB_KEY_Insert,     spawn,          SHCMD("systemctl suspend") },
+    { MODKEY|Control,            XKB_KEY_Insert,     spawn,          SHCMD("loginctl suspend || systemctl suspend") },
 
 	
     /* ---------------- Workspaces ----------------- */
@@ -172,10 +181,10 @@ static const Key keys[] = {
 
     /* ------------------- Apps -------------------- */
 
-	{ MODKEY,                    XKB_KEY_Menu,       spawn,          {.v = menucmd} },
+	{ MODKEY,                    XKB_KEY_m,          spawn,          {.v = menucmd} },
 
 	/* wofi */
-	{ MODKEY,                    XKB_KEY_m,          spawn,          SHCMD("wofi --show=drun") },
+	{ MODKEY,                    XKB_KEY_Menu,       spawn,          SHCMD("wofi --show=run") },
 
 	/* Terminal emulators */
 	{ MODKEY,                    XKB_KEY_Return,     spawn,          {.v = termcmd} },

@@ -397,7 +397,7 @@ static Atom netatom[NetLast];
 #endif
 
 /* configuration, allows nested code to access above variables */
-#include "config.h"
+#include "config.def.h"
 
 struct Pertag {
 	unsigned int curtag, prevtag; /* current and previous tag */
