@@ -1417,12 +1417,10 @@ focustop(Monitor *m)
 void
 handlecursoractivity()
 {
-	if (hide_cursor) {
-		wl_event_source_timer_update(hide_source, cursor_inactive);
-		if (cursor_hidden) {
-			wlr_xcursor_manager_set_cursor_image(cursor_mgr, "left_ptr", cursor);
-			cursor_hidden = 0;
-		}
+	wl_event_source_timer_update(hide_source, cursor_inactive);
+	if (cursor_hidden) {
+		wlr_xcursor_manager_set_cursor_image(cursor_mgr, "left_ptr", cursor);
+		cursor_hidden = 0;
 	}
 }
 
@@ -1430,7 +1428,6 @@ int
 hidecursor(void *data)
 {
 	wlr_cursor_set_image(cursor, NULL, 0, 0, 0, 0, 0, 0);
-	wlr_seat_pointer_notify_clear_focus(seat);
 	cursor_hidden = 1;
 	return 1;
 }
@@ -1855,13 +1852,7 @@ pointerfocus(Client *c, struct wlr_surface *surface, double sx, double sy,
 
 	/* Otherwise, let the client know that the mouse cursor has entered one
 	 * of its surfaces, and make keyboard focus follow if desired. */
-	if (!cursor_hidden)
-		wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
-	/* wlr_seat_pointer_notify_enter seems to always show the cursor when
-	 * calling this to restore pointer focus while mapping and unmapping layer
-	 * surfaces. Not sure how sway makes it work, but you're unlikely to care
-	 * about which surface has pointer focus in this case as you don't know
-	 * where you're clicking until you show the cursor again. */
+	wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
 
 	if (!c || client_is_unmanaged(c))
 		return;
