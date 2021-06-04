@@ -1960,16 +1960,20 @@ renderclients(Monitor *m, struct timespec *now)
 	struct render_data rdata;
 	struct wlr_box *borders;
 	struct wlr_surface *surface;
-	bool hide = m->focus && m->focus->isfullscreen;
 	/* Each subsequent window we render is rendered on top of the last. Because
 	 * our stacking list is ordered front-to-back, we iterate over it backwards. */
 	wl_list_for_each_reverse(c, &stack, slink) {
-		/* Only render visible clients which show on this monitor */
+		/* Render visible clients which show on this monitor
+		 * in monocle only render the selected client
+		 * if the focused client is fullscreen render it
+		 * the floating clients always are rendered
+		 * TODO find way to only render the previous client to selected floating in monocle layout */
 		if (!VISIBLEON(c, c->mon) || !wlr_output_layout_intersects(
 					output_layout, m->wlr_output, &c->geom) ||
-					(((selmon->lt[selmon->sellt]->arrange == monocle && c != sel && !sel->isfloating)) ) ||
-//					((c->isfloating || sel->isfloating) || c != sel) || /* render the */
-					(hide && c != m->focus && (m->focus->isfloating))) /* only render the focused fullscreen client */
+					(selmon->lt[selmon->sellt]->arrange == monocle &&
+							c != sel && !sel->isfloating && !c->isfloating ) ||
+					(m->focus && m->focus->isfullscreen && c != m->focus &&
+							!sel->isfloating && !c->isfloating))
 			continue;
 
 		surface = client_surface(c);
