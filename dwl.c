@@ -305,6 +305,7 @@ static void pointerfocus(Client *c, struct wlr_surface *surface,
 		double sx, double sy, uint32_t time);
 static void printstatus(void);
 static void quit(const Arg *arg);
+static void quitsignal(int signo);
 static void render(struct wlr_surface *surface, int sx, int sy, void *data);
 static void renderclients(Monitor *m, struct timespec *now);
 static void renderlayer(struct wl_list *layer_surfaces, struct timespec *now);
@@ -1893,6 +1894,12 @@ quit(const Arg *arg)
 }
 
 void
+quitsignal(int signo)
+{
+	quit(NULL);
+}
+
+void
 render(struct wlr_surface *surface, int sx, int sy, void *data)
 {
 	/* This function is called for every surface that needs to be rendered. */
@@ -2421,8 +2428,10 @@ setup(void)
 	 * clients from the Unix socket, manging Wayland globals, and so on. */
 	dpy = wl_display_create();
 
-	/* clean up child processes immediately */
+	/* Set up signal handlers */
 	sigchld(0);
+	signal(SIGINT, quitsignal);
+	signal(SIGTERM, quitsignal);
 
 	/* The backend is a wlroots feature which abstracts the underlying input and
 	 * output hardware. The autocreate option will choose the most suitable
