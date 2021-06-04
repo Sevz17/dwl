@@ -1953,7 +1953,7 @@ render(struct wlr_surface *surface, int sx, int sy, void *data)
 void
 renderclients(Monitor *m, struct timespec *now)
 {
-	Client *c, *sel = selclient();
+	Client *c, *sel = m->focus;
 	const float *color;
 	double ox, oy;
 	int i, w, h;
