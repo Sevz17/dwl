@@ -81,16 +81,16 @@ static const int disable_mouse_acceleration = 1;
 static const int tap_to_click = 1;
 static const int natural_scrolling = 0;
 
-#define MODKEY WLR_MODIFIER_LOGO
-#define ALTKEY WLR_MODIFIER_ALT
+#define MODKEY  WLR_MODIFIER_LOGO
+#define ALTKEY  WLR_MODIFIER_ALT
 #define Control WLR_MODIFIER_CTRL
-#define Shift WLR_MODIFIER_SHIFT
+#define Shift   WLR_MODIFIER_SHIFT
 
-#define TAGKEYS(KEY,SKEY,TAG) \
+#define TAGKEYS(KEY,TAG) \
 	{ MODKEY,                    KEY,            view,            {.ui = 1 << TAG} }, \
 	{ MODKEY|WLR_MODIFIER_CTRL,  KEY,            toggleview,      {.ui = 1 << TAG} }, \
-	{ MODKEY|WLR_MODIFIER_SHIFT, SKEY,           tag,             {.ui = 1 << TAG} }, \
-	{ MODKEY|WLR_MODIFIER_CTRL|WLR_MODIFIER_SHIFT,SKEY,toggletag, {.ui = 1 << TAG} }
+	{ MODKEY|WLR_MODIFIER_SHIFT, KEY,            tag,             {.ui = 1 << TAG} }, \
+	{ MODKEY|WLR_MODIFIER_CTRL|WLR_MODIFIER_SHIFT,KEY,toggletag,  {.ui = 1 << TAG} }
 
 /* helper for spawning shell commands in the pre dwm-5.0 fashion */
 #define SHCMD(cmd) { .v = (const char*[]){ "/bin/sh", "-c", cmd, NULL } }
@@ -105,141 +105,140 @@ static const char *menucmd[] = {
 	NULL
 };
 
+#include "keys.h"
 static const Key keys[] = {
-	/* Note that Shift changes certain key codes: c -> C, 2 -> at, etc. */
-	/* modifier                  key                 function        argument */
+	/* modifier                  key           function        argument */
 
     /* ------------------ Windows ------------------ */
 
 	/* Switch between windows */
-	{ MODKEY,                    XKB_KEY_r,          focusstack,     {.i = +1} },
-	{ MODKEY,                    XKB_KEY_t,          focusstack,     {.i = -1} },
+	{ MODKEY,              Key_j,              focusstack,     {.i = +1} },
+	{ MODKEY,              Key_k,              focusstack,     {.i = -1} },
 
 	/* Change window sizes */
-	{ MODKEY,                    XKB_KEY_c,          incnmaster,     {.i = +1} },
-	{ MODKEY|Shift,              XKB_KEY_C,          incnmaster,     {.i = -1} },
-	{ MODKEY,                    XKB_KEY_d,          setmfact,       {.f = -0.05} },
-	{ MODKEY,                    XKB_KEY_n,          setmfact,       {.f = +0.05} },
+	{ MODKEY,              Key_i,              incnmaster,     {.i = +1} },
+	{ MODKEY|Shift,        Key_i,              incnmaster,     {.i = -1} },
+	{ MODKEY,              Key_h,              setmfact,       {.f = -0.05} },
+	{ MODKEY,              Key_l,              setmfact,       {.f = +0.05} },
 
 	/* Toggle floating */
-	{ MODKEY|Control,            XKB_KEY_u,          togglefloating, {0} },
+	{ MODKEY|Control,      Key_f,              togglefloating, {0} },
 
 	/* Toggle fullscreen */
-	{ MODKEY|Shift,              XKB_KEY_U,          togglefullscreen, {0} },
+	{ MODKEY|Shift,        Key_f,              togglefullscreen, {0} },
 
 	/* Cycle layouts */
-	{ MODKEY,                    XKB_KEY_Tab,        cyclelayout,    {.i = +1 } },
-	{ MODKEY|Shift,              XKB_KEY_Tab,        cyclelayout,    {.i = -1 } },
+	{ MODKEY,              Key_Tab,            cyclelayout,    {.i = +1 } },
+	{ MODKEY|Shift,        Key_Tab,            cyclelayout,    {.i = -1 } },
 
 	/* Focus next - prev monitor */
-	{ MODKEY,                    XKB_KEY_w,          focusmon,       {.i = WLR_DIRECTION_LEFT} },
-	{ MODKEY,                    XKB_KEY_v,          focusmon,       {.i = WLR_DIRECTION_RIGHT} },
+	{ MODKEY,              Key_comma,          focusmon,       {.i = WLR_DIRECTION_LEFT} },
+	{ MODKEY,              Key_period,         focusmon,       {.i = WLR_DIRECTION_RIGHT} },
 
 	/* Send window to next - prev monitor */
-	{ MODKEY|Shift,              XKB_KEY_W,          tagmon,         {.i = WLR_DIRECTION_LEFT} },
-	{ MODKEY|Shift,              XKB_KEY_V,          tagmon,         {.i = WLR_DIRECTION_RIGHT} },
+	{ MODKEY|Shift,        Key_comma,          tagmon,         {.i = WLR_DIRECTION_LEFT} },
+	{ MODKEY|Shift,        Key_period,         tagmon,         {.i = WLR_DIRECTION_RIGHT} },
 
     // Change opacity for clients
-	{ MODKEY|ShiftMask,          XKB_KEY_KP_Add,     changealpha,    {.f = +0.1}},
-	{ MODKEY|ShiftMask,          XKB_KEY_KP_Subtract,changealpha,    {.f = -0.1}},
+	{ MODKEY|ShiftMask,    Key_KP_Add,         changealpha,    {.f = +0.1 } },
+	{ MODKEY|ShiftMask,    Key_KP_Subtract,    changealpha,    {.f = -0.1 } },
 
 	/* Kill window */
-	{ MODKEY,                    XKB_KEY_comma,      killclient,     {0} },
+	{ MODKEY,              Key_w,              killclient,     {0} },
 
 	/* Quit dwl */
-	{ MODKEY|Control,            XKB_KEY_period,     quit,           {0} },
+	{ MODKEY|Control,      Key_q,              quit,           {0} },
 
-//	/* Restart dwl */
-//	{ MODKEY|Control,            XKB_KEY_p,          quit,           {1} },
+	/* Restart dwl */
+//	{ MODKEY|Control,      Key_r,              quit,           {1} },
 
     /* Shutdown computer */
-    { ALTKEY|Control,            XKB_KEY_Delete,     spawn,          SHCMD("loginctl poweroff || systemctl poweroff") },
+    { ALTKEY|Control,      Key_Delete,         spawn,          SHCMD("loginctl poweroff || systemctl poweroff") },
 
     /* Restart computer */
-    { ALTKEY|Control,            XKB_KEY_Insert,     spawn,          SHCMD("loginctl reboot || systemctl reboot") },
+    { ALTKEY|Control,      Key_Insert,         spawn,          SHCMD("loginctl reboot || systemctl reboot") },
 
     /* Hibernate computer */
-    { MODKEY|Control,            XKB_KEY_Delete,     spawn,          SHCMD("loginctl hibernate || systemctl hibernate") },
+    { MODKEY|Control,      Key_Delete,         spawn,          SHCMD("loginctl hibernate || systemctl hibernate") },
 
     /* Suspend computer */
-    { MODKEY|Control,            XKB_KEY_Insert,     spawn,          SHCMD("loginctl suspend || systemctl suspend") },
+    { MODKEY|Control,      Key_Insert,         spawn,          SHCMD("loginctl suspend || systemctl suspend") },
 
 	
     /* ---------------- Workspaces ----------------- */
-	TAGKEYS(          XKB_KEY_1, XKB_KEY_exclam,                     0),
-	TAGKEYS(          XKB_KEY_2, XKB_KEY_quotedbl,                   1),
-	TAGKEYS(          XKB_KEY_3, XKB_KEY_numbersign,                 2),
-	TAGKEYS(          XKB_KEY_4, XKB_KEY_dollar,                     3),
-	TAGKEYS(          XKB_KEY_5, XKB_KEY_percent,                    4),
-	TAGKEYS(          XKB_KEY_6, XKB_KEY_ampersand,                  5),
-	TAGKEYS(          XKB_KEY_7, XKB_KEY_slash,                      6),
-	TAGKEYS(          XKB_KEY_8, XKB_KEY_parenleft,                  7),
-	TAGKEYS(          XKB_KEY_9, XKB_KEY_parenright,                 8),
-	TAGKEYS(          XKB_KEY_0, XKB_KEY_equal,                      9),
+	TAGKEYS(               Key_1,                              0),
+	TAGKEYS(               Key_2,                              1),
+	TAGKEYS(               Key_3,                              2),
+	TAGKEYS(               Key_4,                              3),
+	TAGKEYS(               Key_5,                              4),
+	TAGKEYS(               Key_6,                              5),
+	TAGKEYS(               Key_7,                              6),
+	TAGKEYS(               Key_8,                              7),
+	TAGKEYS(               Key_9,                              8),
+	TAGKEYS(               Key_0,                              9),
 
 	/* Switch between the last tag and the current */
-	{ MODKEY,                    XKB_KEY_z,          view,           {0} },
+	{ MODKEY,              Key_slash,          view,           {0} },
 
     /* ------------------- Apps -------------------- */
 
-	{ MODKEY,                    XKB_KEY_m,          spawn,          {.v = menucmd} },
+	{ MODKEY,              Key_m,          spawn,              {.v = menucmd} },
 
 	/* wofi */
-	{ MODKEY,                    XKB_KEY_Menu,       spawn,          SHCMD("wofi --show=run") },
+	{ MODKEY,              Key_Menu,       spawn,              SHCMD("wofi --show=run") },
 
 	/* Terminal emulators */
-	{ MODKEY,                    XKB_KEY_Return,     spawn,          {.v = termcmd} },
-//	{ MODKEY,                    XKB_KEY_Return,     zoom,           {0} },
-//	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_parenright, tag,            {.ui = ~0} },
+	{ MODKEY,              Key_Return,     spawn,              {.v = termcmd} },
 
     /* ----------------- Hardware ------------------ */
 
     /* Volume */
-    { MODKEY,                     XKB_KEY_apostrophe, spawn,          SHCMD("pactl set-sink-volume @DEFAULT_SINK@ -2%")},
-    { MODKEY,                     XKB_KEY_questiondown,spawn,         SHCMD("pactl set-sink-volume @DEFAULT_SINK@ +2%")},
-    { MODKEY,                     XKB_KEY_BackSpace,  spawn,          SHCMD("pactl set-sink-mute @DEFAULT_SINK@ toggle")},
+    { MODKEY,              Key_minus,      spawn,              SHCMD("pactl set-sink-volume @DEFAULT_SINK@ -2%")},
+    { MODKEY,              Key_equal,      spawn,              SHCMD("pactl set-sink-volume @DEFAULT_SINK@ +2%")},
+    { MODKEY,              Key_BackSpace,  spawn,              SHCMD("pactl set-sink-mute @DEFAULT_SINK@ toggle")},
 
 	/* -------------------- Gaps ------------------- */
 
 	/* Increase - decrease all gaps */
-	{ MODKEY,                    XKB_KEY_i,          incrgaps,       {.i = +1 } },
-	{ MODKEY|Shift,              XKB_KEY_I,          incrgaps,       {.i = -1 } },
+	{ MODKEY,              Key_g,          incrgaps,           {.i = +1 } },
+	{ MODKEY|Shift,        Key_g,          incrgaps,           {.i = -1 } },
 
 	/* Restore - toggle gaps */
-	{ MODKEY|ALTKEY,             XKB_KEY_i,          defaultgaps,    {0} },
-	{ MODKEY|Control,            XKB_KEY_i,          togglegaps,     {0} },
-	{ MODKEY|Control,            XKB_KEY_h,          toggleoutergaps,{0} },
-	{ MODKEY|Control,            XKB_KEY_f,          toggleinnergaps,{0} },
+	{ MODKEY|ALTKEY,       Key_g,          defaultgaps,        {0} },
+	{ MODKEY|Control,      Key_g,          togglegaps,         {0} },
+	{ MODKEY|Control,      Key_o,          toggleoutergaps,    {0} },
+	{ MODKEY|Control,      Key_y,          toggleinnergaps,    {0} },
 
 	/* Increase - decrease inner gaps */
-	{ ALTKEY|Shift,    XKB_KEY_T,      incrigaps,      {.i = +1 } },
-	{ ALTKEY|Shift,    XKB_KEY_R,      incrigaps,      {.i = -1 } },
+	{ ALTKEY|Shift,        Key_k,          incrigaps,          {.i = +1 } },
+	{ ALTKEY|Shift,        Key_j,          incrigaps,          {.i = -1 } },
 
 	/* Increase - decrease inner vertical gaps */
-	{ MODKEY,          XKB_KEY_f,          incrivgaps,     {.i = +1 } },
-	{ MODKEY|Shift,    XKB_KEY_F,          incrivgaps,     {.i = -1 } },
+	{ MODKEY,              Key_y,          incrivgaps,         {.i = +1 } },
+	{ MODKEY|Shift,        Key_y,          incrivgaps,         {.i = -1 } },
 
 	/* Increase - decrease inner horizontal gaps */
-	{ MODKEY,          XKB_KEY_h,          incrihgaps,     {.i = +1 } },
-	{ MODKEY|Shift,    XKB_KEY_H,          incrihgaps,     {.i = -1 } },
+	{ MODKEY,              Key_o,          incrihgaps,         {.i = +1 } },
+	{ MODKEY|Shift,        Key_o,          incrihgaps,         {.i = -1 } },
 
 	/* Increase - decrease outer gaps */
-	{ ALTKEY|Shift,    XKB_KEY_D,          incrogaps,      {.i = +1 } },
-	{ ALTKEY|Shift,    XKB_KEY_N,          incrogaps,      {.i = -1 } },
+	{ ALTKEY|Shift,        Key_h,          incrogaps,          {.i = +1 } },
+	{ ALTKEY|Shift,        Key_l,          incrogaps,          {.i = -1 } },
 
 	/* Increase - decrease outer vertical gaps */
-	{ ALTKEY,          XKB_KEY_F,          incrovgaps,     {.i = -1 } },
-	{ ALTKEY|Shift,    XKB_KEY_F,          incrovgaps,     {.i = +1 } },
+	{ ALTKEY,              Key_y,          incrovgaps,         {.i = -1 } },
+	{ ALTKEY|Shift,        Key_y,          incrovgaps,         {.i = +1 } },
 
 	/* Increase - decrease outer horizontal gaps */
-	{ ALTKEY,          XKB_KEY_h,          incrohgaps,     {.i = +1 } },
-	{ ALTKEY|Shift,    XKB_KEY_H,          incrohgaps,     {.i = -1 } },
+	{ ALTKEY,              Key_o,          incrohgaps,         {.i = +1 } },
+	{ ALTKEY|Shift,        Key_o,          incrohgaps,         {.i = -1 } },
 
 	/* Ctrl-Alt-Backspace and Ctrl-Alt-Fx used to be handled by X server */
-	{ WLR_MODIFIER_CTRL|WLR_MODIFIER_ALT,XKB_KEY_Terminate_Server, quit, {0} },
-#define CHVT(n) { WLR_MODIFIER_CTRL|WLR_MODIFIER_ALT,XKB_KEY_XF86Switch_VT_##n, chvt, {.ui = (n)} }
-	CHVT(1), CHVT(2), CHVT(3), CHVT(4), CHVT(5), CHVT(6),
-	CHVT(7), CHVT(8), CHVT(9), CHVT(10), CHVT(11), CHVT(12),
+	{ WLR_MODIFIER_CTRL|WLR_MODIFIER_ALT,Key_BackSpace, quit, {0} },
+#define CHVT(KEY,n) { WLR_MODIFIER_CTRL|WLR_MODIFIER_ALT, KEY, chvt, {.ui = (n)} }
+	CHVT(Key_F1, 1), CHVT(Key_F2,  2),  CHVT(Key_F3,  3),  CHVT(Key_F4,  4),
+	CHVT(Key_F5, 5), CHVT(Key_F6,  6),  CHVT(Key_F7,  7),  CHVT(Key_F8,  8),
+	CHVT(Key_F9, 9), CHVT(Key_F10, 10), CHVT(Key_F11, 11), CHVT(Key_F12, 12),
 };
 
 static const Button buttons[] = {
