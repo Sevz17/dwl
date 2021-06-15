@@ -238,8 +238,10 @@ static const Key keys[] = {
     { MODKEY,              Key_p,          spawn,              SHCMD("spotify") },
 
     // Messengers
-    { MODKEY,              Key_t,          spawn,              SHCMD("telegram-desktop") },
     { MODKEY,              Key_d,          spawn,              SHCMD("discord") },
+
+	/* Mail client */
+    { MODKEY,              Key_t,          spawn,              SHCMD("thunderbird") },
 
     // Miscellaneous
     { MODKEY,              Key_d,          spawn,              SHCMD("zoom") },
