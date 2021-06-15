@@ -106,6 +106,7 @@ static const char *menucmd[] = {
 };
 
 #include "keys.h"
+#include "mpdcontrol.c"
 static const Key keys[] = {
 	/* modifier            key                 function        argument */
 
@@ -270,19 +271,19 @@ static const Key keys[] = {
     /* --------------------- MPD ------------------- */
 
     /* Clients */
-    { MODKEY,              Key_n,          spawn,              SHCMD("foot -e ncmpcpp") },
+    { MODKEY,              Key_n,          spawn,              SHCMD("foot ncmpcpp") },
     { MODKEY|Shift,        Key_n,          spawn,              SHCMD("cantata") },
 
     /* Previus or next song */
-//	{ MODKEY|ALTKEY,       Key_F1,         mpdchange,          {.i = -1} },
-//	{ MODKEY|ALTKEY,       Key_F3,         mpdchange,          {.i = +1} },
+	{ MODKEY|ALTKEY,       Key_F1,         mpdchange,          {.i = -1} },
+	{ MODKEY|ALTKEY,       Key_F3,         mpdchange,          {.i = +1} },
 
     /* Play or pause */
-//	{ MODKEY|ALTKEY,       Key_space,      mpdcontrol,         {0} },
+	{ MODKEY|ALTKEY,       Key_F2,         mpdcontrol,         {0} },
 
     /* Volume */
-//	{MODKEY|ALTKEY,        Key_minus,      mpd_volume,         {.i = -diff_volume } },
-//	{MODKEY|ALTKEY,        Key_equals,     mpd_volume,         {.i = +diff_volume } },
+	{MODKEY|ALTKEY,        Key_minus,      mpd_volume,         {.i = -2 } },
+	{MODKEY|ALTKEY,        Key_equal,      mpd_volume,         {.i = +2 } },
 
 
 	/* ------------ Other music players ------------ */

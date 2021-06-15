@@ -5,7 +5,7 @@ CFLAGS += -I. -DWLR_USE_UNSTABLE -std=c99
 WAYLAND_PROTOCOLS=$(shell pkg-config --variable=pkgdatadir wayland-protocols)
 WAYLAND_SCANNER=$(shell pkg-config --variable=wayland_scanner wayland-scanner)
 
-PKGS = wlroots wayland-server xcb xkbcommon libinput pixman-1
+PKGS = wlroots wayland-server xcb xkbcommon libinput pixman-1 libmpdclient
 CFLAGS += $(foreach p,$(PKGS),$(shell pkg-config --cflags $(p)))
 LDLIBS += $(foreach p,$(PKGS),$(shell pkg-config --libs $(p)))
 
@@ -65,6 +65,6 @@ idle-protocol.c:
 
 idle-protocol.o: idle-protocol.h
 
-dwl.o: config.mk config.def.h client.h xdg-shell-protocol.h wlr-layer-shell-unstable-v1-protocol.h idle-protocol.h pointer-constraints-unstable-v1-protocol.h
+dwl.o: config.mk config.def.h client.h xdg-shell-protocol.h wlr-layer-shell-unstable-v1-protocol.h idle-protocol.h pointer-constraints-unstable-v1-protocol.h mpdcontrol.c
 
 dwl: xdg-shell-protocol.o wlr-layer-shell-unstable-v1-protocol.o idle-protocol.o pointer-constraints-unstable-v1-protocol.o
