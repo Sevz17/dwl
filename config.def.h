@@ -110,7 +110,7 @@ static const char *menucmd[] = {
 static const Key keys[] = {
 	/* modifier            key                 function        argument */
 
-    /* ------------------ Windows ------------------ */
+	/* ------------------ Windows ------------------ */
 
 	/* Switch between windows */
 	{ MODKEY,              Key_j,              focusstack,     {.i = +1} },
@@ -140,7 +140,7 @@ static const Key keys[] = {
 	{ MODKEY|Shift,        Key_comma,          tagmon,         {.i = WLR_DIRECTION_LEFT} },
 	{ MODKEY|Shift,        Key_period,         tagmon,         {.i = WLR_DIRECTION_RIGHT} },
 
-    /* Change opacity for clients */
+	/* Change opacity for clients */
 	{ MODKEY|ShiftMask,    Key_KP_Add,         changealpha,    {.f = +0.1 } },
 	{ MODKEY|ShiftMask,    Key_KP_Subtract,    changealpha,    {.f = -0.1 } },
 
@@ -191,7 +191,7 @@ static const Key keys[] = {
 	{ ALTKEY|Shift,        Key_o,          incrohgaps,         {.i = -1 } },
 
 
-    /* ---------------- Workspaces ----------------- */
+	/* ---------------- Workspaces ----------------- */
 	TAGKEYS(               Key_1,                              0),
 	TAGKEYS(               Key_2,                              1),
 	TAGKEYS(               Key_3,                              2),
@@ -206,7 +206,7 @@ static const Key keys[] = {
 	/* Switch between the last tag and the current */
 	{ MODKEY,              Key_slash,          view,           { .ui = 0 } },
 
-    /* ------------------- Apps -------------------- */
+	/* ------------------- Apps -------------------- */
 
 	{ MODKEY,              Key_m,          spawn,              {.v = menucmd} },
 
@@ -215,98 +215,98 @@ static const Key keys[] = {
 
 	/* Terminal emulators */
 	{ MODKEY,              Key_Return,     spawn,              {.v = termcmd} },
-    { MODKEY|Shift,        Key_Return,     spawn,              SHCMD("alacritty") },
+	{ MODKEY|Shift,        Key_Return,     spawn,              SHCMD("alacritty") },
 
-    /* File explorers */
-    { MODKEY,              Key_e,          spawn,              SHCMD("pcmanfm") },
-    { MODKEY|Shift,        Key_e,          spawn,              SHCMD("thunar") },
-
-
-    /* Browsers */
-    { MODKEY,              Key_b,          spawn,              SHCMD("microsoft-edge-dev") },
-    { MODKEY,              Key_f,          spawn,              SHCMD("firefox") },
+	/* File explorers */
+	{ MODKEY,              Key_e,          spawn,              SHCMD("pcmanfm") },
+	{ MODKEY|Shift,        Key_e,          spawn,              SHCMD("thunar") },
 
 
-    /* Redshift */
-    { MODKEY,              Key_r,          spawn,              SHCMD("redshift -O 2400") },
-    { MODKEY|Shift,        Key_r,          spawn,              SHCMD("redshift -x") },
+	/* Browsers */
+	{ MODKEY,              Key_b,          spawn,              SHCMD("microsoft-edge-dev") },
+	{ MODKEY,              Key_f,          spawn,              SHCMD("firefox") },
+
+
+	/* Redshift */
+	{ MODKEY,              Key_r,          spawn,              SHCMD("redshift -O 2400") },
+	{ MODKEY|Shift,        Key_r,          spawn,              SHCMD("redshift -x") },
 
 	/* Screenshot */
-    { MODKEY,              Key_s,          spawn,              SHCMD("grim - | swappy -f -") },
-    { MODKEY|Shift,        Key_s,          spawn,              SHCMD("grim -g \"$(slurp)\" - | swappy -f -") },
+	{ MODKEY,              Key_s,          spawn,              SHCMD("grim - | swappy -f -") },
+	{ MODKEY|Shift,        Key_s,          spawn,              SHCMD("grim -g \"$(slurp)\" - | swappy -f -") },
 
-    /* Music Players */
-    { MODKEY,              Key_p,          spawn,              SHCMD("spotify") },
+	/* Music Players */
+	{ MODKEY,              Key_p,          spawn,              SHCMD("spotify") },
 
-    /* Messengers */
-    { MODKEY,              Key_d,          spawn,              SHCMD("discord") },
+	/* Messengers */
+	{ MODKEY,              Key_d,          spawn,              SHCMD("discord") },
 
 	/* Mail client */
-    { MODKEY,              Key_t,          spawn,              SHCMD("thunderbird") },
+	{ MODKEY,              Key_t,          spawn,              SHCMD("thunderbird") },
 
-    /* Miscellaneous */
-    { MODKEY,              Key_d,          spawn,              SHCMD("zoom") },
-
-
-    /* ----------------- Hardware ------------------ */
-
-    /* Shutdown computer */
-    { ALTKEY|Control,      Key_Delete,     spawn,              SHCMD("loginctl poweroff || systemctl poweroff") },
-
-    /* Restart computer */
-    { ALTKEY|Control,      Key_Insert,     spawn,              SHCMD("loginctl reboot || systemctl reboot") },
-
-    /* Hibernate computer */
-    { MODKEY|Control,      Key_Delete,     spawn,              SHCMD("loginctl hibernate || systemctl hibernate") },
-
-    /* Suspend computer */
-    { MODKEY|Control,      Key_Insert,     spawn,              SHCMD("loginctl suspend || systemctl suspend") },
-
-    /* Volume */
-    { MODKEY,              Key_minus,      spawn,              SHCMD("amixer set Master 2%-")},
-    { MODKEY,              Key_equal,      spawn,              SHCMD("amixer set Master 2%+")},
-    { MODKEY,              Key_BackSpace,  spawn,              SHCMD("amixer set Master toggle")},
+	/* Miscellaneous */
+	{ MODKEY,              Key_d,          spawn,              SHCMD("zoom") },
 
 
-    /* --------------------- MPD ------------------- */
+	/* ----------------- Hardware ------------------ */
 
-    /* Clients */
-    { MODKEY,              Key_n,          spawn,              SHCMD("foot ncmpcpp") },
-    { MODKEY|Shift,        Key_n,          spawn,              SHCMD("cantata") },
+	/* Shutdown computer */
+	{ ALTKEY|Control,      Key_Delete,     spawn,              SHCMD("loginctl poweroff || systemctl poweroff") },
 
-    /* Previus or next song */
+	/* Restart computer */
+	{ ALTKEY|Control,      Key_Insert,     spawn,              SHCMD("loginctl reboot || systemctl reboot") },
+
+	/* Hibernate computer */
+	{ MODKEY|Control,      Key_Delete,     spawn,              SHCMD("loginctl hibernate || systemctl hibernate") },
+
+	/* Suspend computer */
+	{ MODKEY|Control,      Key_Insert,     spawn,              SHCMD("loginctl suspend || systemctl suspend") },
+
+	/* Volume */
+	{ MODKEY,              Key_minus,      spawn,              SHCMD("amixer set Master 2%-")},
+	{ MODKEY,              Key_equal,      spawn,              SHCMD("amixer set Master 2%+")},
+	{ MODKEY,              Key_BackSpace,  spawn,              SHCMD("amixer set Master toggle")},
+
+
+	/* --------------------- MPD ------------------- */
+
+	/* Clients */
+	{ MODKEY,              Key_n,          spawn,              SHCMD("foot ncmpcpp") },
+	{ MODKEY|Shift,        Key_n,          spawn,              SHCMD("cantata") },
+
+	/* Previus or next song */
 	{ MODKEY|ALTKEY,       Key_F1,         mpdchange,          {.i = -1} },
 	{ MODKEY|ALTKEY,       Key_F3,         mpdchange,          {.i = +1} },
 
-    /* Play or pause */
+	/* Play or pause */
 	{ MODKEY|ALTKEY,       Key_F2,         mpdcontrol,         {0} },
 
-    /* Volume */
+	/* Volume */
 	{MODKEY|ALTKEY,        Key_minus,      mpd_volume,         {.i = -2 } },
 	{MODKEY|ALTKEY,        Key_equal,      mpd_volume,         {.i = +2 } },
 
 
 	/* ------------ Other music players ------------ */
 
-    /* Previus or next song */
-    { MODKEY,              Key_F1,         spawn,              SHCMD("playerctl --ignore-player=spotify previous") },
+	/* Previus or next song */
+	{ MODKEY,              Key_F1,         spawn,              SHCMD("playerctl --ignore-player=spotify previous") },
 	{ ALTKEY,              Key_F3,         spawn,              SHCMD("playerctl --ignore-player=spotify next") },
 
-    { MODKEY,              Key_F1,         spawn,              SHCMD("playerctl --player=spotify previous") },
-    { ALTKEY,              Key_F3,         spawn,              SHCMD("playerctl --player=spotify next") },
+	{ MODKEY,              Key_F1,         spawn,              SHCMD("playerctl --player=spotify previous") },
+	{ ALTKEY,              Key_F3,         spawn,              SHCMD("playerctl --player=spotify next") },
 
-    /* Play or pause */
-    { MODKEY,              Key_F2,         spawn,              SHCMD("playerctl --ignore-player=spotify play-pause") },
-    { ALTKEY,              Key_F2,         spawn,              SHCMD("playerctl --player spotify play-pause") },
+	/* Play or pause */
+	{ MODKEY,              Key_F2,         spawn,              SHCMD("playerctl --ignore-player=spotify play-pause") },
+	{ ALTKEY,              Key_F2,         spawn,              SHCMD("playerctl --player spotify play-pause") },
 
-    /* Volume (all except mpd and spotify) */
-    { MODKEY|ShiftMask,    Key_minus,      spawn,              SHCMD("playerctl --ignore-player spotify,mpd volume 0.02-") },
-    { MODKEY|ShiftMask,    Key_equal,      spawn,              SHCMD("playerctl --ignore-player spotify,mpd volume 0.02+") },
+	/* Volume (all except mpd and spotify) */
+	{ MODKEY|ShiftMask,    Key_minus,      spawn,              SHCMD("playerctl --ignore-player spotify,mpd volume 0.02-") },
+	{ MODKEY|ShiftMask,    Key_equal,      spawn,              SHCMD("playerctl --ignore-player spotify,mpd volume 0.02+") },
 
-    /* Volume (only for spotify) */
-    { ALTKEY,              Key_minus,      spawn,              SHCMD("vol_spotify -2%") },
-    { ALTKEY,              Key_equal,      spawn,              SHCMD("vol_spotify +2%") },
-    { ALTKEY,              Key_BackSpace,  spawn,              SHCMD("vol_spotify toggle-mute")},
+	/* Volume (only for spotify) */
+	{ ALTKEY,              Key_minus,      spawn,              SHCMD("vol_spotify -2%") },
+	{ ALTKEY,              Key_equal,      spawn,              SHCMD("vol_spotify +2%") },
+	{ ALTKEY,              Key_BackSpace,  spawn,              SHCMD("vol_spotify toggle-mute")},
 
 
 	/* ------------------- TTY's ------------------- */

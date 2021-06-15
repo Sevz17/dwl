@@ -1000,7 +1000,7 @@ createmon(struct wl_listener *listener, void *data)
 	wlr_output_enable(wlr_output, 1);
 	if (!wlr_output_commit(wlr_output))
 		return;
-	
+
 	m->pertag = calloc(1, sizeof(Pertag));
 	m->pertag->curtag = m->pertag->prevtag = 1;
 
@@ -1045,10 +1045,10 @@ createpointerconstraint(struct wl_listener *listener, void *data)
 	struct wlr_pointer_constraint_v1 *constraint = data;
 	struct pointer_constraint *pointer_constraint = calloc(1, sizeof(struct pointer_constraint));
 	pointer_constraint->constraint = constraint;
-	
+
 	pointer_constraint->destroy.notify = destroypointerconstraint;
 	wl_signal_add(&constraint->events.destroy, &pointer_constraint->destroy);
-	
+
 	if (client_surface(selclient()) == constraint->surface) {
 		if (allow_constrain == 0 || active_constraint == constraint)
 			return;
@@ -2655,7 +2655,7 @@ tile(Monitor *m)
 		oe = ie = 0; // gaps disabled
 		draw_borders = 0;
 	}
-	
+
 	if (n > m->nmaster)
 		mw = m->nmaster ? (m->w.width + m->gappiv*ie) * m->mfact : 0;
 	else
