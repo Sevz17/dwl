@@ -360,6 +360,7 @@ static void zoom(const Arg *arg);
 
 /* variables */
 static const char broken[] = "broken";
+static int exit_code = EXIT_SUCCESS;
 static struct wl_display *dpy;
 static struct wlr_backend *backend;
 static struct wlr_renderer *drw;
@@ -1887,6 +1888,8 @@ printstatus(void)
 void
 quit(const Arg *arg)
 {
+	exit_code = arg->i;
+
 	wl_display_terminate(dpy);
 }
 
@@ -3117,7 +3120,7 @@ main(int argc, char *argv[])
 	setup();
 	run(startup_cmd);
 	cleanup();
-	return EXIT_SUCCESS;
+	return exit_code;
 
 usage:
 	BARF("Usage: %s [-s startup command]", argv[0]);

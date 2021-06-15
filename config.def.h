@@ -147,10 +147,10 @@ static const Key keys[] = {
 	{ MODKEY,              Key_w,              killclient,     {0} },
 
 	/* Quit dwl */
-	{ MODKEY|Control,      Key_q,              quit,           {0} },
+	{ MODKEY|Control,      Key_q,              quit,           {.i = EXIT_SUCCESS } },
 
 	/* Restart dwl */
-//	{ MODKEY|Control,      Key_r,              quit,           {1} },
+	{ MODKEY|Control,      Key_r,              quit,           {.i = EXIT_FAILURE } },
 
 
 	/* -------------------- Gaps ------------------- */
