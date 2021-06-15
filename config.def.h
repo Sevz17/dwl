@@ -139,7 +139,7 @@ static const Key keys[] = {
 	{ MODKEY|Shift,        Key_comma,          tagmon,         {.i = WLR_DIRECTION_LEFT} },
 	{ MODKEY|Shift,        Key_period,         tagmon,         {.i = WLR_DIRECTION_RIGHT} },
 
-    // Change opacity for clients
+    /* Change opacity for clients */
 	{ MODKEY|ShiftMask,    Key_KP_Add,         changealpha,    {.f = +0.1 } },
 	{ MODKEY|ShiftMask,    Key_KP_Subtract,    changealpha,    {.f = -0.1 } },
 
@@ -237,13 +237,13 @@ static const Key keys[] = {
     /* Music Players */
     { MODKEY,              Key_p,          spawn,              SHCMD("spotify") },
 
-    // Messengers
+    /* Messengers */
     { MODKEY,              Key_d,          spawn,              SHCMD("discord") },
 
 	/* Mail client */
     { MODKEY,              Key_t,          spawn,              SHCMD("thunderbird") },
 
-    // Miscellaneous
+    /* Miscellaneous */
     { MODKEY,              Key_d,          spawn,              SHCMD("zoom") },
 
 
