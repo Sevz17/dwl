@@ -5,7 +5,7 @@ static const unsigned int gappx     = 6;  /* gaps between windows */
 static const float rootcolor[]      = {0.3, 0.3, 0.3, 1.0};
 static const float focuscolor[]     = {0.4, 0.0, 1.0, 1.0};
 static const float bordercolor[]    = {0.0, 0.0, 0.0, 0.7};
-static const double default_alpha   = 0.75;
+static const double default_alpha   = 0.9;
 
 /* tagging */
 static const char *tags[] = { " ", "﬏ ", " ", " ", " ", " ", " ", " ", " ", " " };
