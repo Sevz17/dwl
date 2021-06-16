@@ -883,6 +883,7 @@ createkeyboard(struct wlr_input_device *device)
 	struct xkb_keymap *keymap;
 	uint32_t leds = 0;
 	xkb_mod_mask_t locked_mods = 0;
+	xkb_mod_index_t mod_index;
 	Keyboard *kb = device->data = calloc(1, sizeof(*kb));
 	kb->device = device;
 
@@ -903,18 +904,9 @@ createkeyboard(struct wlr_input_device *device)
 
 	wlr_seat_set_keyboard(seat, device);
 
-	if (numlock) {
-		xkb_mod_index_t mod_index = xkb_keymap_mod_get_index(keymap, XKB_MOD_NAME_NUM);
-		if (mod_index != XKB_MOD_INVALID) {
-			locked_mods |= (uint32_t)1 << mod_index;
-		}
-	}
-
-	if (capslock) {
-		xkb_mod_index_t mod_index = xkb_keymap_mod_get_index(keymap, XKB_MOD_NAME_CAPS);
-		if (mod_index != XKB_MOD_INVALID) {
-			locked_mods |= (uint32_t)1 << mod_index;
-		}
+	mod_index = xkb_keymap_mod_get_index(keymap, XKB_MOD_NAME_NUM);
+	if (mod_index != XKB_MOD_INVALID) {
+		locked_mods |= (uint32_t)1 << mod_index;
 	}
 
 	if (locked_mods) {
