@@ -191,10 +191,6 @@ struct Monitor {
 	struct wlr_box w;      /* window area, layout-relative */
 	struct wl_list layers[4]; // LayerSurface::link
 	const Layout *lt[2];
-	int gappih;            /* horizontal gap between windows */
-	int gappiv;            /* vertical gap between windows */
-	int gappoh;            /* horizontal outer gaps */
-	int gappov;            /* vertical outer gaps */
 	Pertag *pertag;
 	unsigned int seltags;
 	unsigned int sellt;
@@ -318,18 +314,6 @@ static void setcursor(struct wl_listener *listener, void *data);
 static void setpsel(struct wl_listener *listener, void *data);
 static void setsel(struct wl_listener *listener, void *data);
 static void setfloating(Client *c, int floating);
-static void setgaps(int oh, int ov, int ih, int iv);
-static void incrgaps(const Arg *arg);
-static void incrigaps(const Arg *arg);
-static void incrogaps(const Arg *arg);
-static void incrohgaps(const Arg *arg);
-static void incrovgaps(const Arg *arg);
-static void incrihgaps(const Arg *arg);
-static void incrivgaps(const Arg *arg);
-static void togglegaps(const Arg *arg);
-static void toggleinnergaps(const Arg *arg);
-static void toggleoutergaps(const Arg *arg);
-static void defaultgaps(const Arg *arg);
 static void setfullscreen(Client *c, int fullscreen);
 static void setlayout(const Arg *arg);
 static void setmfact(const Arg *arg);
@@ -401,8 +385,6 @@ struct wlr_pointer_constraints_v1 *pointer_constraints;
 struct wlr_pointer_constraint_v1 *active_constraint;
 static struct wl_listener constraint_commit;
 struct wlr_relative_pointer_manager_v1 *relative_pointer_manager;
-
-static int enablegaps = 1;   /* enables gaps, used by togglegaps */
 
 /* global event handlers */
 static struct wl_listener cursor_axis = {.notify = axisnotify};
@@ -964,10 +946,6 @@ createmon(struct wl_listener *listener, void *data)
 	unsigned int i;
 	m->wlr_output = wlr_output;
 	m->focus = NULL;
-	m->gappih = gappih;
-	m->gappiv = gappiv;
-	m->gappoh = gappoh;
-	m->gappov = gappov;
 
 	/* Initialize monitor state using configured rules */
 	for (size_t i = 0; i < LENGTH(m->layers); i++)
@@ -2224,131 +2202,6 @@ setfloating(Client *c, int floating)
 }
 
 void
-setgaps(int oh, int ov, int ih, int iv)
-{
-	if (oh < 0) oh = 0;
-	if (ov < 0) ov = 0;
-	if (ih < 0) ih = 0;
-	if (iv < 0) iv = 0;
-
-	selmon->gappoh = oh;
-	selmon->gappov = ov;
-	selmon->gappih = ih;
-	selmon->gappiv = iv;
-	arrange(selmon);
-}
-
-void
-togglegaps(const Arg *arg)
-{
-	if (enableinnergaps && !enableoutergaps)
-		toggleinnergaps(arg);
-	else if (enableoutergaps && !enableinnergaps)
-		toggleoutergaps(arg);
-	else {
-		toggleinnergaps(arg);
-		toggleoutergaps(arg);
-	}
-}
-
-void
-toggleoutergaps(const Arg *arg)
-{
-	enableoutergaps = !enableoutergaps;
-	arrange(selmon);
-}
-
-void
-toggleinnergaps(const Arg *arg)
-{
-	enableinnergaps = !enableinnergaps;
-	arrange(selmon);
-}
-
-void
-defaultgaps(const Arg *arg)
-{
-	setgaps(gappoh, gappov, gappih, gappiv);
-}
-
-void
-incrgaps(const Arg *arg)
-{
-	setgaps(
-		selmon->gappoh + arg->i,
-		selmon->gappov + arg->i,
-		selmon->gappih + arg->i,
-		selmon->gappiv + arg->i
-	);
-}
-
-void
-incrigaps(const Arg *arg)
-{
-	setgaps(
-		selmon->gappoh,
-		selmon->gappov,
-		selmon->gappih + arg->i,
-		selmon->gappiv + arg->i
-	);
-}
-
-void
-incrogaps(const Arg *arg)
-{
-	setgaps(
-		selmon->gappoh + arg->i,
-		selmon->gappov + arg->i,
-		selmon->gappih,
-		selmon->gappiv
-	);
-}
-
-void
-incrohgaps(const Arg *arg)
-{
-	setgaps(
-		selmon->gappoh + arg->i,
-		selmon->gappov,
-		selmon->gappih,
-		selmon->gappiv
-	);
-}
-
-void
-incrovgaps(const Arg *arg)
-{
-	setgaps(
-		selmon->gappoh,
-		selmon->gappov + arg->i,
-		selmon->gappih,
-		selmon->gappiv
-	);
-}
-
-void
-incrihgaps(const Arg *arg)
-{
-	setgaps(
-		selmon->gappoh,
-		selmon->gappov,
-		selmon->gappih + arg->i,
-		selmon->gappiv
-	);
-}
-
-void
-incrivgaps(const Arg *arg)
-{
-	setgaps(
-		selmon->gappoh,
-		selmon->gappov,
-		selmon->gappih,
-		selmon->gappiv + arg->i
-	);
-}
-
-void
 setlayout(const Arg *arg)
 {
 	if (!arg || !arg->v || arg->v != selmon->lt[selmon->sellt])
@@ -2642,7 +2495,7 @@ tagmon(const Arg *arg)
 void
 tile(Monitor *m)
 {
-	unsigned int i, n = 0, h, r, oe = enableoutergaps, ie = enableinnergaps, mw, my, ty, draw_borders = 1;
+	unsigned int i, n = 0, h, r, mw, my, ty, gaps = gappx, draw_borders = 1;
 	Client *c;
 
 	wl_list_for_each(c, &clients, link)
@@ -2652,29 +2505,30 @@ tile(Monitor *m)
 		return;
 
 	if (n == 1) {
-		oe = ie = 0; // gaps disabled
-		draw_borders = 0;
+		draw_borders = gaps = 0;
 	}
 
 	if (n > m->nmaster)
-		mw = m->nmaster ? (m->w.width + m->gappiv*ie) * m->mfact : 0;
+		mw = m->nmaster ? m->w.width * m->mfact : 0;
 	else
-		mw = m->w.width - 2*m->gappov*oe + m->gappiv*ie;
+		mw = m->w.width;
 	i = 0;
-	my = ty = m->gappoh*oe;
+	my = ty = 0;
 	wl_list_for_each(c, &clients, link) {
 		if (!VISIBLEON(c, m) || c->isfloating || c->isfullscreen)
 			continue;
 		if (i < m->nmaster) {
 			r = MIN(n, m->nmaster) - i;
-			h = (m->w.height - my - m->gappov*oe - m->gappiv*ie * (r - 1)) / r;
-			resize(c, m->w.x + m->gappoh*oe, m->w.y + my, mw - (m->gappih*ie/2) - m->gappoh*oe, h, 0, draw_borders);
-			my += c->geom.height + m->gappiv*ie;
+			h = (m->w.height - my - gaps * (r - 1)) / r;
+			resize(c, m->w.x, m->w.y + my, mw, h, 0, draw_borders);
+			my += c->geom.height + gaps;
 		} else {
 			r = n - i;
-			h = (m->w.height - ty - m->gappov*oe - m->gappiv*ie * (r - 1)) / r;
-			resize(c, m->w.x + mw + (m->gappih*ie/2), m->w.y + ty, m->w.width - mw - m->gappoh*oe - (m->gappih*ie/2), h, 0, draw_borders);
-			ty += c->geom.height + m->gappiv*ie;
+			h = (m->w.height - ty - gaps * (r - 1)) / r;
+			resize(c, m->nmaster == 0 ? m->w.x : m->w.x + mw + gaps,
+					m->w.y + ty, m->w.width - mw - (m->nmaster == 0 ? 0 : gaps),
+					h, 0, draw_borders);
+			ty += c->geom.height + gaps;
 		}
 		i++;
 	}

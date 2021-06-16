@@ -1,14 +1,7 @@
 /* appearance */
 static const int sloppyfocus        = 1;  /* focus follows mouse */
 static const unsigned int borderpx  = 2;  /* border pixel of windows */
-static const unsigned int gappih    = 6;  /* horiz inner gap between windows */
-static const unsigned int gappiv    = 6;  /* vert inner gap between windows */
-static const unsigned int gappoh    = 6;  /* horiz outer gap between windows and screen edge */
-static const unsigned int gappov    = 6;  /* vert outer gap between windows and screen edge */
-static const int smartgaps          = 1;  /* 1 means no outer gap when there is only one window */
-static const int smartborders       = 1;  /* 1 means no borders when there is only one window */
-static unsigned int enableoutergaps = 0;  /* 0 means no outer gaps */
-static unsigned int enableinnergaps = 1;  /* 0 means no inner gaps */
+static const unsigned int gappx     = 6;  /* gaps between windows */
 static const float rootcolor[]      = {0.3, 0.3, 0.3, 1.0};
 static const float focuscolor[]     = {0.4, 0.0, 1.0, 1.0};
 static const float bordercolor[]    = {0.0, 0.0, 0.0, 0.7};
@@ -152,43 +145,6 @@ static const Key keys[] = {
 
 	/* Restart dwl */
 	{ MODKEY|Control,      Key_r,              quit,           {.i = EXIT_FAILURE } },
-
-
-	/* -------------------- Gaps ------------------- */
-
-	/* Increase - decrease all gaps */
-	{ MODKEY,              Key_g,          incrgaps,           {.i = +1 } },
-	{ MODKEY|Shift,        Key_g,          incrgaps,           {.i = -1 } },
-
-	/* Restore - toggle gaps */
-	{ MODKEY|ALTKEY,       Key_g,          defaultgaps,        {0} },
-	{ MODKEY|Control,      Key_g,          togglegaps,         {0} },
-	{ MODKEY|Control,      Key_o,          toggleoutergaps,    {0} },
-	{ MODKEY|Control,      Key_y,          toggleinnergaps,    {0} },
-
-	/* Increase - decrease inner gaps */
-	{ ALTKEY|Shift,        Key_k,          incrigaps,          {.i = +1 } },
-	{ ALTKEY|Shift,        Key_j,          incrigaps,          {.i = -1 } },
-
-	/* Increase - decrease inner vertical gaps */
-	{ MODKEY,              Key_y,          incrivgaps,         {.i = +1 } },
-	{ MODKEY|Shift,        Key_y,          incrivgaps,         {.i = -1 } },
-
-	/* Increase - decrease inner horizontal gaps */
-	{ MODKEY,              Key_o,          incrihgaps,         {.i = +1 } },
-	{ MODKEY|Shift,        Key_o,          incrihgaps,         {.i = -1 } },
-
-	/* Increase - decrease outer gaps */
-	{ ALTKEY|Shift,        Key_h,          incrogaps,          {.i = +1 } },
-	{ ALTKEY|Shift,        Key_l,          incrogaps,          {.i = -1 } },
-
-	/* Increase - decrease outer vertical gaps */
-	{ ALTKEY,              Key_y,          incrovgaps,         {.i = -1 } },
-	{ ALTKEY|Shift,        Key_y,          incrovgaps,         {.i = +1 } },
-
-	/* Increase - decrease outer horizontal gaps */
-	{ ALTKEY,              Key_o,          incrohgaps,         {.i = +1 } },
-	{ ALTKEY|Shift,        Key_o,          incrohgaps,         {.i = -1 } },
 
 
 	/* ---------------- Workspaces ----------------- */
