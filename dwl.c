@@ -2196,11 +2196,11 @@ tile(Monitor *m)
 			continue;
 		if (i < m->nmaster) {
 			h = (m->w.height - my) / (MIN(n, m->nmaster) - i);
-			resize(c, m->w.x, m->w.y + my, mw, h, 0);
+			resize(c, m->w.x + m->w.width - mw, m->w.y + my, mw, h, 0);
 			my += c->geom.height;
 		} else {
 			h = (m->w.height - ty) / (n - i);
-			resize(c, m->w.x + mw, m->w.y + ty, m->w.width - mw, h, 0);
+			resize(c, m->w.x - mw, m->w.y + ty, m->w.width - mw, h, 0);
 			ty += c->geom.height;
 		}
 		i++;
