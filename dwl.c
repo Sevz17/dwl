@@ -2200,7 +2200,7 @@ tile(Monitor *m)
 			my += c->geom.height;
 		} else {
 			h = (m->w.height - ty) / (n - i);
-			resize(c, m->w.x - mw, m->w.y + ty, m->w.width - mw, h, 0);
+			resize(c, m->w.x, m->w.y + ty, m->w.width - mw, h, 0);
 			ty += c->geom.height;
 		}
 		i++;
