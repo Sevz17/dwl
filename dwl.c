@@ -1067,7 +1067,7 @@ createpointer(struct wlr_input_device *device)
 		if (libinput_device_config_scroll_has_natural_scroll(libinput_device))
 			libinput_device_config_scroll_set_natural_scroll_enabled(libinput_device, natural_scrolling);
 
-		if (libinput_device_config_accel_is_available(libinput_device) && disable_mouse_acceleration)
+		if (libinput_device_config_accel_is_available(libinput_device))
 			libinput_device_config_accel_set_profile(libinput_device, LIBINPUT_CONFIG_ACCEL_PROFILE_FLAT);
 	}
 

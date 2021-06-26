@@ -61,9 +61,6 @@ static const int repeat_delay = 600;
 static const int cursor_inactive = 1000;
 static const int hide_cursor = 0;
 
-/* Disable acceleration */
-static const int disable_mouse_acceleration = 1;
-
 /* Trackpad */
 static const int tap_to_click = 1;
 static const int natural_scrolling = 0;
