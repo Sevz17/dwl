@@ -2139,6 +2139,15 @@ setlayout(const Arg *arg)
 		selmon->sellt = selmon->pertag->sellts[selmon->pertag->curtag] ^= 1;
 	if (arg && arg->v)
 		selmon->lt[selmon->sellt] = selmon->pertag->ltidxs[selmon->pertag->curtag][selmon->sellt] = (Layout *)arg->v;
+	if (!selmon->lt[selmon->sellt]->arrange && !selmon->pertag->ltidxs[selmon->pertag->curtag][selmon->sellt]->arrange) {
+		/* floating layout, draw borders around all clients */
+		Client *c;
+		wl_list_for_each(c, &clients, link) {
+			if (c->bw)
+				continue;
+			resize(c, c->geom.x, c->geom.y, c->geom.width, c->geom.height, 0, 1);
+		}
+	}
 	/* TODO change layout symbol? */
 	arrange(selmon);
 	printstatus();
