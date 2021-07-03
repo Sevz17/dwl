@@ -21,6 +21,7 @@
 #include <wlr/types/wlr_export_dmabuf_v1.h>
 #include <wlr/types/wlr_gamma_control_v1.h>
 #include <wlr/types/wlr_input_device.h>
+#include <wlr/types/wlr_input_inhibitor.h>
 #include <wlr/types/wlr_idle.h>
 #include <wlr/types/wlr_layer_shell_v1.h>
 #include <wlr/types/wlr_keyboard.h>
@@ -347,6 +348,7 @@ static struct wl_list stack;   /* stacking z-order */
 static struct wl_list independents;
 static struct wl_list subsurfaces;
 static struct wlr_idle *idle;
+static struct wlr_input_inhibit_manager *inhibit_manager;
 static struct wlr_layer_shell_v1 *layer_shell;
 static struct wlr_output_manager_v1 *output_mgr;
 static struct wlr_virtual_keyboard_manager_v1 *virtual_keyboard_mgr;
@@ -2292,6 +2294,8 @@ setup(void)
 
 	xdg_shell = wlr_xdg_shell_create(dpy);
 	wl_signal_add(&xdg_shell->events.new_surface, &new_xdg_surface);
+
+	inhibit_manager = wlr_input_inhibit_manager_create(dpy);
 
 	/* Use decoration protocols to negotiate server-side decorations */
 	wlr_server_decoration_manager_set_default_mode(
