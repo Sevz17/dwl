@@ -1420,9 +1420,11 @@ keypress(struct wl_listener *listener, void *data)
 
 	wlr_idle_notify_activity(idle, seat);
 
-	/* On _press_, attempt to process a compositor keybinding. */
-	if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED)
-		handled = keybinding(mods, keycode) || handled;
+	/* On _press_ if there is no active screen locker,
+	 * attempt to process a compositor keybinding. */
+	if (!inhibit_manager->active_inhibitor)
+		if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED)
+			handled = keybinding(mods, keycode);
 
 	if (!handled) {
 		/* Pass unhandled keycodes along to the client. */
