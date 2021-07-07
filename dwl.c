@@ -1891,7 +1891,7 @@ renderclients(Monitor *m, struct timespec *now)
 					output_layout, m->wlr_output, &c->geom) ||
 					(selmon->lt[selmon->sellt]->arrange == monocle &&
 							c != sel && !sel->isfloating && !c->isfloating ) ||
-					(m->focus && m->focus->isfullscreen && c != m->focus &&
+					(sel && sel->isfullscreen && c != sel &&
 							!sel->isfloating && !c->isfloating))
 			continue;
 
