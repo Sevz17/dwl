@@ -243,7 +243,7 @@ static void focusmon(const Arg *arg);
 static void focusstack(const Arg *arg);
 static void fullscreennotify(struct wl_listener *listener, void *data);
 static Client *focustop(Monitor *m);
-static void idleinhibitcheckactive(int destroy);
+static void idleinhibitcheckactive(void);
 static void incnmaster(const Arg *arg);
 static void inputdevice(struct wl_listener *listener, void *data);
 static int keybinding(uint32_t mods, xkb_keysym_t sym);
@@ -794,7 +794,7 @@ createidleinhibitor(struct wl_listener *listener, void *data)
 	struct wlr_idle_inhibitor_v1 *idle_inhibitor = data;
 	wl_signal_add(&idle_inhibitor->events.destroy, &destroy_idle_inhibitor);
 
-	idleinhibitcheckactive(0);
+	idleinhibitcheckactive();
 }
 
 void
@@ -990,7 +990,7 @@ cursorframe(struct wl_listener *listener, void *data)
 void
 destroyidleinhibitor(struct wl_listener *listener, void *data)
 {
-	idleinhibitcheckactive(1);
+	idleinhibitcheckactive();
 }
 
 void
@@ -1095,7 +1095,7 @@ focusclient(Client *c, int lift)
 		wl_list_insert(&stack, &c->slink);
 	}
 
-	idleinhibitcheckactive(0);
+	idleinhibitcheckactive();
 
 	if (c && client_surface(c) == old)
 		return;
@@ -1191,16 +1191,11 @@ focustop(Monitor *m)
 }
 
 void
-idleinhibitcheckactive(int destroy)
+idleinhibitcheckactive(void)
 {
 	struct wlr_idle_inhibitor_v1 *idle_inhibitor;
 	Client *c;
 	int inhibited = 0;
-
-	if (destroy) {
-		wlr_idle_set_enabled(idle, seat, 1);
-		return;
-	}
 
 	wl_list_for_each(idle_inhibitor, &idle_inhibit_mgr->inhibitors, link) {
 		c = client_from_wlr_surface(idle_inhibitor->surface);
