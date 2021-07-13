@@ -1204,7 +1204,7 @@ idleinhibitcheckactive(int destroy)
 
 	wl_list_for_each(idle_inhibitor, &idle_inhibit_mgr->inhibitors, link) {
 		c = client_from_wlr_surface(idle_inhibitor->surface);
-		if ((inhibited = VISIBLEON(c, c->mon)))
+		if ((inhibited = c && VISIBLEON(c, c->mon)))
 			break;
 	}
 	wlr_idle_set_enabled(idle, seat, !inhibited);
