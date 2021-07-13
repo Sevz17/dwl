@@ -234,7 +234,6 @@ static void createnotify(struct wl_listener *listener, void *data);
 static void createlayersurface(struct wl_listener *listener, void *data);
 static void createpointer(struct wlr_input_device *device);
 static void cursorframe(struct wl_listener *listener, void *data);
-static void destroyidleinhibitor(struct wl_listener *listener, void *data);
 static void destroylayersurfacenotify(struct wl_listener *listener, void *data);
 static void destroynotify(struct wl_listener *listener, void *data);
 static Monitor *dirtomon(enum wlr_direction dir);
@@ -348,7 +347,6 @@ static struct wl_listener cursor_button = {.notify = buttonpress};
 static struct wl_listener cursor_frame = {.notify = cursorframe};
 static struct wl_listener cursor_motion = {.notify = motionrelative};
 static struct wl_listener cursor_motion_absolute = {.notify = motionabsolute};
-static struct wl_listener destroy_idle_inhibitor = {.notify = destroyidleinhibitor};
 static struct wl_listener layout_change = {.notify = updatemons};
 static struct wl_listener new_idle_inhibitor = {.notify = createidleinhibitor};
 static struct wl_listener new_input = {.notify = inputdevice};
@@ -791,9 +789,6 @@ commitnotify(struct wl_listener *listener, void *data)
 void
 createidleinhibitor(struct wl_listener *listener, void *data)
 {
-	struct wlr_idle_inhibitor_v1 *idle_inhibitor = data;
-	wl_signal_add(&idle_inhibitor->events.destroy, &destroy_idle_inhibitor);
-
 	idleinhibitcheckactive();
 }
 
@@ -985,12 +980,6 @@ cursorframe(struct wl_listener *listener, void *data)
 	 * same time, in which case a frame event won't be sent in between. */
 	/* Notify the client with pointer focus of the frame event. */
 	wlr_seat_pointer_notify_frame(seat);
-}
-
-void
-destroyidleinhibitor(struct wl_listener *listener, void *data)
-{
-	idleinhibitcheckactive();
 }
 
 void
