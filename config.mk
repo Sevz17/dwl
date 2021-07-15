@@ -9,3 +9,6 @@ CFLAGS ?= -g -Wall -Wextra -Werror -Wno-unused-parameter -Wno-sign-compare -Wno-
 
 # Uncomment to build XWayland support
 CFLAGS += -DXWAYLAND
+
+# Optimizations
+CFLAGS += -march=native -O2
