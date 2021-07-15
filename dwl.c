@@ -349,7 +349,7 @@ static struct wl_list stack;   /* stacking z-order */
 static struct wl_list independents;
 static struct wl_list subsurfaces;
 static struct wlr_idle *idle;
-static struct wlr_input_inhibit_manager *inhibit_manager;
+static struct wlr_input_inhibit_manager *input_inhibit_mgr;
 static struct wlr_layer_shell_v1 *layer_shell;
 static struct wlr_output_manager_v1 *output_mgr;
 static struct wlr_virtual_keyboard_manager_v1 *virtual_keyboard_mgr;
@@ -1449,7 +1449,7 @@ keypress(struct wl_listener *listener, void *data)
 
 	/* On _press_ if there is no active screen locker,
 	 * attempt to process a compositor keybinding. */
-	if (!inhibit_manager->active_inhibitor)
+	if (!input_inhibit_mgr->active_inhibitor)
 		if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED)
 			handled = keybinding(mods, keycode);
 
@@ -2335,7 +2335,7 @@ setup(void)
 	xdg_shell = wlr_xdg_shell_create(dpy);
 	wl_signal_add(&xdg_shell->events.new_surface, &new_xdg_surface);
 
-	inhibit_manager = wlr_input_inhibit_manager_create(dpy);
+	input_inhibit_mgr = wlr_input_inhibit_manager_create(dpy);
 
 	/* Use decoration protocols to negotiate server-side decorations */
 	wlr_server_decoration_manager_set_default_mode(
