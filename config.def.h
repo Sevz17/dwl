@@ -7,6 +7,15 @@ static const float focuscolor[]     = {0.4, 0.0, 1.0, 1.0};
 static const float bordercolor[]    = {0.0, 0.0, 0.0, 0.7};
 static const double default_alpha   = 0.9;
 
+static const char *const autostart[] = {
+	"sh", "-c", "swaylock --image $(chbg --print)", NULL,
+	"sh", "-c", "swaybg --image $(chbg --print) --mode fill", NULL,
+	"sh", "-c", "slstatus.bottom -s | dtao -z -z -ta l -b -L bottom -fn 'UbuntuMono Nerd Font:size=16:antialias=true:autohint:true'", NULL,
+	"redshift", "-m", "wayland", NULL,
+	"pipewire", NULL,
+	NULL /* terminate */
+};
+
 /* tagging */
 static const char *tags[] = { " ", "﬏ ", " ", " ", " ", " ", " ", " ", " ", " " };
 

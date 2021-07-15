@@ -239,6 +239,7 @@ static void arrange(Monitor *m);
 static void arrangelayer(Monitor *m, struct wl_list *list,
 		struct wlr_box *usable_area, int exclusive);
 static void arrangelayers(Monitor *m);
+static void autostartexec(void);
 static void axisnotify(struct wl_listener *listener, void *data);
 static void buttonpress(struct wl_listener *listener, void *data);
 static void changealpha(const Arg *arg);
@@ -423,6 +424,9 @@ struct Pertag {
 
 /* compile-time check if all tags fit into an unsigned int bit array. */
 struct NumTags { char limitexceeded[LENGTH(tags) > 31 ? -1 : 1]; };
+
+static pid_t *autostart_pids;
+static size_t autostart_len;
 
 /* function implementations */
 void
@@ -665,6 +669,29 @@ arrangelayers(Monitor *m)
 				return;
 			}
 		}
+	}
+}
+
+void
+autostartexec(void) {
+	const char *const *p;
+	size_t i = 0;
+
+	/* count entries */
+	for (p = autostart; *p; autostart_len++, p++)
+		while (*++p);
+
+	autostart_pids = calloc(autostart_len, sizeof(pid_t));
+	for (p = autostart; *p; i++, p++) {
+		if ((autostart_pids[i] = fork()) == 0) {
+			setsid();
+			execvp(*p, (char *const *)p);
+			fprintf(stderr, "dwl: execvp %s\n", *p);
+			perror(" failed");
+			_exit(EXIT_FAILURE);
+		}
+		/* skip arguments */
+		while (*++p);
 	}
 }
 
@@ -1800,6 +1827,16 @@ printstatus(void)
 void
 quit(const Arg *arg)
 {
+	size_t i;
+
+	/* kill child processes */
+	for (i = 0; i < autostart_len; i++) {
+		if (0 < autostart_pids[i]) {
+			kill(autostart_pids[i], SIGTERM);
+			waitpid(autostart_pids[i], NULL, 0);
+		}
+	}
+
 	exit_code = arg->i;
 
 	wl_display_terminate(dpy);
@@ -2045,6 +2082,7 @@ run(char *startup_cmd)
 	setenv("WAYLAND_DISPLAY", socket, 1);
 
 	/* Now that the socket exists, run the startup command */
+	autostartexec();
 	if (startup_cmd) {
 		int piperw[2];
 		pipe(piperw);
@@ -2399,10 +2437,24 @@ sigchld(int unused)
 	 * but the Xwayland implementation in wlroots currently prevents us from
 	 * setting our own disposition for SIGCHLD.
 	 */
+	pid_t pid;
+
 	if (signal(SIGCHLD, sigchld) == SIG_ERR)
 		EBARF("can't install SIGCHLD handler");
-	while (0 < waitpid(-1, NULL, WNOHANG))
-		;
+	while (0 < (pid = waitpid(-1, NULL, WNOHANG))) {
+		pid_t *p, *lim;
+
+		if (!(p = autostart_pids))
+			continue;
+		lim = &p[autostart_len];
+
+		for (; p < lim; p++) {
+			if (*p == pid) {
+				*p = -1;
+				break;
+			}
+		}
+	}
 }
 
 void
