@@ -1183,11 +1183,13 @@ void
 idleinhibitcheckactive(void)
 {
 	struct wlr_idle_inhibitor_v1 *idle_inhibitor;
+	struct wlr_surface *surface;
 	Client *c;
 	int inhibited = 0;
 
 	wl_list_for_each(idle_inhibitor, &idle_inhibit_mgr->inhibitors, link) {
-		c = client_from_wlr_surface(idle_inhibitor->surface);
+		surface = wlr_surface_get_root_surface(idle_inhibitor->surface);
+		c = client_from_wlr_surface(surface);
 		if ((inhibited = c && VISIBLEON(c, c->mon)))
 			break;
 	}
