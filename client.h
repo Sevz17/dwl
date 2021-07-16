@@ -162,6 +162,16 @@ client_surface(Client *c)
 	return c->surface.xdg->surface;
 }
 
+static inline Client *
+client_from_wlr_surface(struct wlr_surface *wlr_surface)
+{
+	Client *c;
+	wl_list_for_each(c, &clients, link)
+		if (client_surface(c) == wlr_surface)
+			return c;
+	return NULL;
+}
+
 static inline struct wlr_surface *
 client_surface_at(Client *c, double cx, double cy, double *sx, double *sy)
 {
