@@ -11,4 +11,4 @@ CFLAGS ?= -g -Wall -Wextra -Werror -Wno-unused-parameter -Wno-sign-compare -Wno-
 CFLAGS += -DXWAYLAND
 
 # Optimizations
-CFLAGS += -march=native -O2
+CFLAGS += -march=native
