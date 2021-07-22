@@ -178,11 +178,6 @@ static const Key keys[] = {
 	{ MODKEY,              Key_Return,      spawn,            {.v = termcmd} },
 	{ MODKEY|Shift,        Key_Return,      spawn,            SHCMD("alacritty") },
 
-	/* File explorers */
-	{ MODKEY,              Key_e,           spawn,            SHCMD("pcmanfm") },
-	{ MODKEY|Shift,        Key_e,           spawn,            SHCMD("thunar") },
-
-
 	/* Browsers */
 	{ MODKEY,              Key_b,           spawn,            SHCMD("microsoft-edge-dev") },
 	{ MODKEY,              Key_f,           spawn,            SHCMD("firefox") },
@@ -204,9 +199,6 @@ static const Key keys[] = {
 
 	/* Mail client */
 	{ MODKEY,              Key_t,           spawn,            SHCMD("thunderbird") },
-
-	/* Miscellaneous */
-	{ MODKEY,              Key_z,           spawn,            SHCMD("zoom") },
 
 
 	/* ----------------- Hardware ------------------ */
