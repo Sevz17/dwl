@@ -21,14 +21,17 @@ static const char *const autostart[] = {
 static const char *tags[] = { " ", "﬏ ", " ", " ", " ", " ", " ", " ", " ", " " };
 
 static const Rule rules[] = {
-	/* app_id     title       tags mask     isfloating   alpha           monitor */
+	/* app_id      title       tags mask  isfloating  alpha           monitor */
 	/* examples:
-	{ "Gimp",     NULL,       0,            1,           default_alpha   -1 },
-	{ "firefox",  NULL,       1 << 8,       0,           default_alpha   -1 },
-	{ "Alacritty",NULL,       1 << 2,       0,           1.0             -1 },
+	{ "Gimp",      NULL,       0,         1,          default_alpha,  -1 },
+	{ "firefox",   NULL,       1 << 8,    0,          default_alpha,  -1 },
+	{ "Alacritty", NULL,       1 << 2,    0,          1.0,            -1 },
 	*/
-	{"Alacritty", NULL,       1<<2,         0,           1.0,            -1},
-	{"foot",      NULL,       1<<2,         0,           1.0,            -1},
+	{ "firefox",   NULL,       1 << 0,    0,          default_alpha,  -1 },
+	{ "Alacritty", NULL,       1 << 2,    0,          1.0,            -1 },
+	{ "foot",      NULL,       1 << 2,    0,          1.0,            -1 },
+	{ "Spotify",   NULL,       1 << 7,    0,          default_alpha,  -1 },
+	{ "discord",   NULL,       1 << 8,    0,          default_alpha,  -1 },
 };
 
 /* layout(s) */
