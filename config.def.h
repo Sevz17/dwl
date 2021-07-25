@@ -9,9 +9,11 @@ static const double default_alpha   = 0.9;
 
 static const char *const autostart[] = {
 	"sh", "-c", "swaylock --image $(chbg --print)", NULL,
-	"sh", "-c", "swaybg --image $(chbg --print) --mode fill", NULL,
-	"sh", "-c", "swayidle -w timeout 900 'swaylock --daemonize --image $(chbg --print)' timeout 1200 'loginctl suspend || systemctl suspend'", NULL,
+	"sh", "-c", "swayidle -w timeout 900 'swaylock --daemonize --image \
+		$(chbg --print)' timeout 1200 'loginctl suspend-then-hibernate \
+		|| systemctl suspend-then-hibernate'", NULL,
 	"sh", "-c", "slstatus.bottom -s | dtao -z -z -ta l -b -L bottom -fn 'UbuntuMono Nerd Font:size=16:antialias=true:autohint:true'", NULL,
+	"wallpaper", NULL,
 	"redshift", "-m", "wayland", NULL,
 	"pipewire", NULL,
 	NULL /* terminate */
