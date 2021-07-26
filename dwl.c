@@ -789,6 +789,10 @@ commitnotify(struct wl_listener *listener, void *data)
 void
 createidleinhibitor(struct wl_listener *listener, void *data)
 {
+	struct wlr_idle_inhibitor_v1 *idle_inhibitor = data;
+	struct wlr_surface *surface = wlr_surface_get_root_surface(idle_inhibitor->surface);
+
+	idle_inhibitor->data = wlr_xdg_surface_from_wlr_surface(surface)->data;
 	idleinhibitcheckactive();
 }
 
@@ -1182,13 +1186,11 @@ void
 idleinhibitcheckactive(void)
 {
 	struct wlr_idle_inhibitor_v1 *idle_inhibitor;
-	struct wlr_surface *surface;
 	Client *c;
 	int inhibited = 0;
 
 	wl_list_for_each(idle_inhibitor, &idle_inhibit_mgr->inhibitors, link) {
-		surface = wlr_surface_get_root_surface(idle_inhibitor->surface);
-		c = client_from_wlr_surface(surface);
+		c = idle_inhibitor->data;
 		if ((inhibited = c && VISIBLEON(c, c->mon)))
 			break;
 	}
