@@ -256,6 +256,7 @@ static void createpointerconstraint(struct wl_listener *listener, void *data);
 static void cursorconstrain(struct wlr_pointer_constraint_v1 *constraint);
 static void cursorframe(struct wl_listener *listener, void *data);
 static void cursorwarptoconstrainthint(void);
+static void cyclelayout(const Arg *arg);
 static void destroydragicon(struct wl_listener *listener, void *data);
 static void destroyidleinhibitor(struct wl_listener *listener, void *data);
 static void destroylayersurfacenotify(struct wl_listener *listener, void *data);
@@ -1365,6 +1366,24 @@ cursorwarptoconstrainthint(void)
 		/* Warp the pointer as well, so that on the next pointer rebase we don't
 		 * send an unexpected synthetic motion event to clients. */
 		wlr_seat_pointer_warp(seat, sx, sy);
+	}
+}
+
+void
+cyclelayout(const Arg *arg)
+{
+	Layout *l;
+	for (l = (Layout *)layouts; l != selmon->lt[selmon->sellt]; l++);
+	if (arg->i > 0) {
+		if (l->symbol && (l + 1)->symbol)
+			setlayout(&((Arg) { .v = (l + 1) }));
+		else
+			setlayout(&((Arg) { .v = layouts }));
+	} else {
+		if (l != layouts && (l - 1)->symbol)
+			setlayout(&((Arg) { .v = (l - 1) }));
+		else
+			setlayout(&((Arg) { .v = &layouts[LENGTH(layouts) - 2] }));
 	}
 }
 
