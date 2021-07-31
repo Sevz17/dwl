@@ -271,6 +271,7 @@ static void fullscreennotify(struct wl_listener *listener, void *data);
 static Client *focustop(Monitor *m);
 static void handlecursoractivity();
 static int hidecursor(void *data);
+static int movecursor(void *data);
 static void idleinhibitcheckactive(void);
 static void incnmaster(const Arg *arg);
 static void inputdevice(struct wl_listener *listener, void *data);
@@ -366,6 +367,7 @@ static struct wlr_xcursor_manager *xcursor_mgr;
 #endif
 static struct wl_event_source *hide_source;
 static int cursor_hidden = 0;
+static struct wl_event_source *move_source;
 
 static struct wlr_seat *seat;
 static struct wl_list keyboards;
@@ -1376,11 +1378,20 @@ focustop(Monitor *m)
 void
 handlecursoractivity()
 {
+	wl_event_source_timer_update(move_source, 60010);
 	wl_event_source_timer_update(hide_source, cursor_inactive);
 	if (cursor_hidden) {
 		wlr_xcursor_manager_set_cursor_image(cursor_mgr, "left_ptr", cursor);
 		cursor_hidden = 0;
 	}
+
+}
+
+int
+movecursor(void *data)
+{
+	wlr_cursor_warp_closest(cursor, NULL, 0, 0);
+	return 1;
 }
 
 int
@@ -2410,6 +2421,8 @@ setup(void)
 
 	hide_source = wl_event_loop_add_timer(wl_display_get_event_loop(dpy),
 			hidecursor, cursor);
+	move_source = wl_event_loop_add_timer(wl_display_get_event_loop(dpy),
+			movecursor, cursor);
 
 	/*
 	 * Configures a seat, which is a single "seat" at which a user sits and
