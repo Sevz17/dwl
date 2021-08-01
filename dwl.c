@@ -1491,9 +1491,9 @@ keypress(struct wl_listener *listener, void *data)
 
 	/* On _press_ if there is no active screen locker,
 	 * attempt to process a compositor keybinding. */
-	if (!input_inhibit_mgr->active_inhibitor)
-		if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED)
-			handled = keybinding(mods, keycode);
+	if (!input_inhibit_mgr->active_inhibitor
+			&& event->state == WL_KEYBOARD_KEY_STATE_PRESSED)
+		handled = keybinding(mods, keycode);
 
 	if (!handled) {
 		/* Pass unhandled keycodes along to the client. */
