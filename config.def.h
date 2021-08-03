@@ -105,7 +105,6 @@ static const char *menucmd[] = {
 };
 
 #include "keys.h"
-#include "mpdcontrol.c"
 static const Key keys[] = {
 	/* modifier            key              function          argument */
 
@@ -223,25 +222,7 @@ static const Key keys[] = {
 	{ MODKEY,              Key_BackSpace,   spawn,            SHCMD("pactl set-sink-mute   @DEFAULT_SINK@ toggle")},
 
 
-	/* --------------------- MPD ------------------- */
-
-	/* Clients */
-	{ MODKEY,              Key_n,           spawn,            SHCMD("foot ncmpcpp") },
-	{ MODKEY|Shift,        Key_n,           spawn,            SHCMD("cantata") },
-
-	/* Previus or next song */
-	{ MODKEY|ALTKEY,       Key_F1,          mpdchange,        {.i = -1} },
-	{ MODKEY|ALTKEY,       Key_F3,          mpdchange,        {.i = +1} },
-
-	/* Play or pause */
-	{ MODKEY|ALTKEY,       Key_F2,          mpdcontrol,       {0} },
-
-	/* Volume */
-	{MODKEY|ALTKEY,        Key_minus,       mpd_volume,       {.i = -2 } },
-	{MODKEY|ALTKEY,        Key_equal,       mpd_volume,       {.i = +2 } },
-
-
-	/* ------------ Other music players ------------ */
+	/* ------------ Control music players ------------ */
 
 	/* Previus or next song */
 	{ MODKEY,              Key_F1,          spawn,            SHCMD("playerctl --ignore-player=spotify previous") },
@@ -254,9 +235,9 @@ static const Key keys[] = {
 	{ MODKEY,              Key_F2,          spawn,            SHCMD("playerctl --ignore-player=spotify play-pause") },
 	{ ALTKEY,              Key_F2,          spawn,            SHCMD("playerctl --player spotify play-pause") },
 
-	/* Volume (all except mpd and spotify) */
-	{ MODKEY|Shift,        Key_minus,       spawn,            SHCMD("playerctl --ignore-player spotify,mpd volume 0.02-") },
-	{ MODKEY|Shift,        Key_equal,       spawn,            SHCMD("playerctl --ignore-player spotify,mpd volume 0.02+") },
+	/* Volume (all except spotify) */
+	{ MODKEY|Shift,        Key_minus,       spawn,            SHCMD("playerctl --ignore-player spotify volume 0.02-") },
+	{ MODKEY|Shift,        Key_equal,       spawn,            SHCMD("playerctl --ignore-player spotify volume 0.02+") },
 
 	/* Volume (only for spotify) */
 	{ ALTKEY,              Key_minus,       spawn,            SHCMD("vol_spotify -2%") },
