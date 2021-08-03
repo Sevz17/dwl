@@ -5,7 +5,6 @@ static const unsigned int gappx     = 6;  /* gaps between windows */
 static const float rootcolor[]      = {0.3, 0.3, 0.3, 1.0};
 static const float focuscolor[]     = {0.4, 0.0, 1.0, 1.0};
 static const float bordercolor[]    = {0.0, 0.0, 0.0, 0.7};
-static const double default_alpha   = 0.9;
 
 static const char *const autostart[] = {
 	"sh", "-c", "swaylock --image $(chbg --print)", NULL,
@@ -23,17 +22,16 @@ static const char *const autostart[] = {
 static const char *tags[] = { " ", "﬏ ", " ", " ", " ", " ", " ", " ", " ", " " };
 
 static const Rule rules[] = {
-	/* app_id      title       tags mask  isfloating  alpha           monitor */
+	/* app_id      title       tags mask  isfloating  monitor */
 	/* examples:
-	{ "Gimp",      NULL,       0,         1,          default_alpha,  -1 },
-	{ "firefox",   NULL,       1 << 8,    0,          default_alpha,  -1 },
-	{ "Alacritty", NULL,       1 << 2,    0,          1.0,            -1 },
+	{ "Gimp",      NULL,       0,         1,          -1 },
+	{ "firefox",   NULL,       1 << 8,    0,          -1 },
 	*/
-	{ "firefox",   NULL,       1 << 0,    0,          default_alpha,  -1 },
-	{ "Alacritty", NULL,       1 << 2,    0,          1.0,            -1 },
-	{ "foot",      NULL,       1 << 2,    0,          1.0,            -1 },
-	{ "Spotify",   NULL,       1 << 7,    0,          default_alpha,  -1 },
-	{ "discord",   NULL,       1 << 8,    0,          default_alpha,  -1 },
+	{ "firefox",   NULL,       1 << 0,    0,          -1 },
+	{ "Alacritty", NULL,       1 << 2,    0,          -1 },
+	{ "foot",      NULL,       1 << 2,    0,          -1 },
+	{ "Spotify",   NULL,       1 << 7,    0,          -1 },
+	{ "discord",   NULL,       1 << 8,    0,          -1 },
 };
 
 /* layout(s) */
@@ -137,10 +135,6 @@ static const Key keys[] = {
 	/* Send window to next - prev monitor */
 	{ MODKEY|Shift,        Key_comma,       tagmon,           {.i = WLR_DIRECTION_LEFT} },
 	{ MODKEY|Shift,        Key_period,      tagmon,           {.i = WLR_DIRECTION_RIGHT} },
-
-	/* Change opacity for clients */
-	{ MODKEY|Shift,        Key_KP_Add,      changealpha,      {.f = +0.1 } },
-	{ MODKEY|Shift,        Key_KP_Subtract, changealpha,      {.f = -0.1 } },
 
 	/* Kill window */
 	{ MODKEY,              Key_w,           killclient,       {0} },
