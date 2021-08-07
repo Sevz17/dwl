@@ -210,9 +210,9 @@ static const Key keys[] = {
 	{ MODKEY|Control,      Key_Insert,      spawn,            SHCMD("loginctl suspend || systemctl suspend") },
 
 	/* Volume */
-	{ MODKEY,              Key_minus,       spawn,            SHCMD("pactl set-sink-volume @DEFAULT_SINK@ -2%")},
-	{ MODKEY,              Key_equal,       spawn,            SHCMD("pactl set-sink-volume @DEFAULT_SINK@ +2%")},
-	{ MODKEY,              Key_BackSpace,   spawn,            SHCMD("pactl set-sink-mute   @DEFAULT_SINK@ toggle")},
+	{ MODKEY,              Key_minus,       spawn,            SHCMD("amixer set Master 2%-")},
+	{ MODKEY,              Key_equal,       spawn,            SHCMD("amixer set Master 2%+")},
+	{ MODKEY,              Key_BackSpace,   spawn,            SHCMD("amixer set Master toggle")},
 
 
 	/* ------------ Control music players ------------ */
