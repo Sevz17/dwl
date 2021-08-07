@@ -1519,9 +1519,11 @@ mapnotify(struct wl_listener *listener, void *data)
 	if (c->mon && VISIBLEON(c, c->mon))
 		wlr_output_damage_add_whole(c->mon->damage);
 
-	if (client_is_x11(c))
+#ifdef XWAYLAND
+	if (c->type != XDGShell)
 		LISTEN(&c->surface.xwayland->surface->events.commit, &c->commit, commitnotifyx11);
 	else
+#endif
 		LISTEN(&c->surface.xdg->surface->events.commit, &c->commit, commitnotify);
 }
 
