@@ -14,7 +14,6 @@ static const char *const autostart[] = {
 		|| systemctl suspend-then-hibernate'", NULL,
 	"sh", "-c", "slstatus.bottom -s | dtao -z -z -ta l -b -L bottom -fn 'UbuntuMono Nerd Font:size=16:antialias=true:autohint:true'", NULL,
 	"redshift", "-m", "wayland", NULL,
-	"pipewire", NULL,
 	NULL /* terminate */
 };
 
