@@ -216,9 +216,9 @@ static const Key keys[] = {
 
 	/* Previus or next song */
 	{ MODKEY,              Key_F1,          spawn,            SHCMD("playerctl --ignore-player=spotify previous") },
-	{ ALTKEY,              Key_F3,          spawn,            SHCMD("playerctl --ignore-player=spotify next") },
+	{ MODKEY,              Key_F3,          spawn,            SHCMD("playerctl --ignore-player=spotify next") },
  
-	{ MODKEY,              Key_F1,          spawn,            SHCMD("playerctl --player=spotify previous") },
+	{ ALTKEY,              Key_F1,          spawn,            SHCMD("playerctl --player=spotify previous") },
 	{ ALTKEY,              Key_F3,          spawn,            SHCMD("playerctl --player=spotify next") },
 
 	/* Play or pause */
