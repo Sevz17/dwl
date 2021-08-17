@@ -69,10 +69,6 @@ static const struct xkb_rule_names xkb_rules = {
 static const int repeat_rate = 25;
 static const int repeat_delay = 600;
 
-/* Time (in miliseconds) until the cursor will hidde */
-static const int cursor_inactive = 1000;
-static const int hide_cursor = 0;
-
 /* Trackpad */
 static const int tap_to_click = 1;
 static const int natural_scrolling = 0;
