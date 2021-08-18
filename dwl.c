@@ -28,6 +28,7 @@
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_output_management_v1.h>
+#include <wlr/types/wlr_output_power_management_v1.h>
 #include <wlr/types/wlr_pointer.h>
 #include <wlr/types/wlr_presentation_time.h>
 #include <wlr/types/wlr_primary_selection.h>
@@ -260,6 +261,7 @@ static void outputmgrtest(struct wl_listener *listener, void *data);
 static void pointerfocus(Client *c, struct wlr_surface *surface,
 		double sx, double sy, uint32_t time);
 static void printstatus(void);
+static void powermgrsetmodenotify(struct wl_listener *listener, void *data);
 static void quit(const Arg *arg);
 static void quitsignal(int signo);
 static void render(struct wlr_surface *surface, int sx, int sy, void *data);
@@ -327,6 +329,9 @@ static struct wlr_xcursor_manager *cursor_mgr;
 static struct wlr_xcursor *xcursor;
 static struct wlr_xcursor_manager *xcursor_mgr;
 #endif
+
+static struct wlr_output_power_manager_v1 *power_mgr;
+static struct wl_listener power_mgr_set_mode = {.notify = powermgrsetmodenotify};
 
 static struct wlr_seat *seat;
 static struct wl_list keyboards;
@@ -1589,6 +1594,14 @@ printstatus(void)
 }
 
 void
+powermgrsetmodenotify(struct wl_listener *listener, void *data)
+{
+	struct wlr_output_power_v1_set_mode_event *event = data;
+	wlr_output_enable(event->output, event->mode);
+	wlr_output_commit(event->output);
+}
+
+void
 quit(const Arg *arg)
 {
 	wl_display_terminate(dpy);
@@ -2030,6 +2043,9 @@ setup(void)
 	/* Initializes the interface used to implement urgency hints */
 	activation = wlr_xdg_activation_v1_create(dpy);
 	wl_signal_add(&activation->events.request_activate, &request_activate);
+
+	power_mgr = wlr_output_power_manager_v1_create(dpy);
+	wl_signal_add(&power_mgr->events.set_mode, &power_mgr_set_mode);
 
 	/* Creates an output layout, which a wlroots utility for working with an
 	 * arrangement of screens in a physical layout. */
