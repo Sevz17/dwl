@@ -28,10 +28,16 @@ static const Rule rules[] = {
 	{ "firefox",   NULL,       1 << 8,    0,          -1 },
 	*/
 	{ "firefox",   NULL,       1 << 0,    0,          -1 },
+	{ "edge",      NULL,       1 << 0,    0,          -1 },
 	{ "Alacritty", NULL,       1 << 2,    0,          -1 },
 	{ "foot",      NULL,       1 << 2,    0,          -1 },
+	{ "office",    NULL,       1 << 4,    0,          -1 },
+	{ "zathura",   NULL,       1 << 4,    0,          -1 },
+	{ "zoom",      NULL,       1 << 6,    1,          -1 },
 	{ "Spotify",   NULL,       1 << 7,    0,          -1 },
 	{ "discord",   NULL,       1 << 8,    0,          -1 },
+	{"thunderbird",NULL,       1 << 8,    0,          -1 },
+	{ "droidcam",  NULL,       1 << 9,    1,          -1 },
 };
 
 /* layout(s) */
