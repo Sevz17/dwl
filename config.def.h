@@ -7,11 +7,12 @@ static const float focuscolor[]     = {0.4, 0.0, 1.0, 1.0};
 static const float bordercolor[]    = {0.0, 0.0, 0.0, 0.7};
 
 static const char *const autostart[] = {
-	"sh", "-c", "swaylock --image /usr/share/backgrounds/archlinux/wave.png", NULL,
-	"sh", "-c", "swaybg   --image $(chbg --print)", NULL,
-	"sh", "-c", "swayidle -w timeout 900 'swaylock --daemonize --image \
-		$(chbg --print)' timeout 1200 'loginctl suspend-then-hibernate \
-		|| systemctl suspend-then-hibernate'", NULL,
+	"swaylock", "--daemonize", "--image", "/usr/share/backgrounds/archlinux/wave.png", "--scaling", "fill", NULL,
+	"sh", "-c", "swaybg --image $(chbg --print) --mode fill", NULL,
+	"swayidle", "-w",
+			"timeout", "600", "output-power -d", "resume", "output-power -e",
+			"timeout", "900", "swaylock --daemonize --image $(chbg --print) --scaling fill",
+			"timeout", "1200", "loginctl suspend-then-hibernate", NULL,
 	"sh", "-c", "slstatus.bottom -s | dtao -z -z -ta l -b -L bottom -fn 'UbuntuMono Nerd Font:size=16:antialias=true:autohint:true'", NULL,
 	"redshift", "-m", "wayland", NULL,
 	"pipewire", NULL,
