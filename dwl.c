@@ -257,6 +257,7 @@ static void createlayersurface(struct wl_listener *listener, void *data);
 static void createpointer(struct wlr_input_device *device);
 static void cursorframe(struct wl_listener *listener, void *data);
 static void cyclelayout(const Arg *arg);
+static void destroyidleinhibitor(struct wl_listener *listener, void *data);
 static void destroylayersurfacenotify(struct wl_listener *listener, void *data);
 static void destroynotify(struct wl_listener *listener, void *data);
 static void destroynotify_sub(struct wl_listener *listener, void *data);
@@ -269,7 +270,6 @@ static void fullscreennotify(struct wl_listener *listener, void *data);
 static Client *focustop(Monitor *m);
 static int hidecursor(void *data);
 static int movecursor(void *data);
-static void idleinhibitcheckactive(void);
 static void incnmaster(const Arg *arg);
 static void inputdevice(struct wl_listener *listener, void *data);
 static int keybinding(uint32_t mods, xkb_keycode_t keycode);
@@ -390,6 +390,7 @@ static struct wl_listener cursor_button = {.notify = buttonpress};
 static struct wl_listener cursor_frame = {.notify = cursorframe};
 static struct wl_listener cursor_motion = {.notify = motionrelative};
 static struct wl_listener cursor_motion_absolute = {.notify = motionabsolute};
+static struct wl_listener destroy_idle_inhibitor = {.notify = destroyidleinhibitor};
 static struct wl_listener layout_change = {.notify = updatemons};
 static struct wl_listener new_idle_inhibitor = {.notify = createidleinhibitor};
 static struct wl_listener new_input = {.notify = inputdevice};
@@ -891,10 +892,9 @@ void
 createidleinhibitor(struct wl_listener *listener, void *data)
 {
 	struct wlr_idle_inhibitor_v1 *idle_inhibitor = data;
-	struct wlr_surface *surface = wlr_surface_get_root_surface(idle_inhibitor->surface);
+	wl_signal_add(&idle_inhibitor->events.destroy, &destroy_idle_inhibitor);
 
-	idle_inhibitor->data = wlr_xdg_surface_from_wlr_surface(surface)->data;
-	idleinhibitcheckactive();
+	wlr_idle_set_enabled(idle, seat, 0);
 }
 
 void
@@ -1148,6 +1148,21 @@ cyclelayout(const Arg *arg)
 }
 
 void
+destroyidleinhibitor(struct wl_listener *listener, void *data)
+{
+	struct wlr_idle_inhibitor_v1 *idle_inhibitor;
+	struct wlr_idle_inhibitor_v1 *caller =
+			wl_container_of(idle_inhibit_mgr->inhibitors.prev, caller, link);
+	int inhibit = 0;
+
+	wl_list_for_each(idle_inhibitor, &idle_inhibit_mgr->inhibitors, link)
+		if ((inhibit = idle_inhibitor != caller))
+			break;
+
+	wlr_idle_set_enabled(idle, seat, !inhibit);
+}
+
+void
 destroylayersurfacenotify(struct wl_listener *listener, void *data)
 {
 	LayerSurface *layersurface = wl_container_of(listener, layersurface, destroy);
@@ -1299,7 +1314,6 @@ focusclient(Client *c, int lift)
 			client_activate_surface(old, 0);
 		}
 	}
-	idleinhibitcheckactive();
 	printstatus();
 
 	if (!c) {
@@ -1367,21 +1381,6 @@ movecursor(void *data)
 {
 	wlr_cursor_warp_closest(cursor, NULL, 0, 0);
 	return 1;
-}
-
-void
-idleinhibitcheckactive(void)
-{
-	struct wlr_idle_inhibitor_v1 *idle_inhibitor;
-	Client *c;
-	int inhibited = 0;
-
-	wl_list_for_each(idle_inhibitor, &idle_inhibit_mgr->inhibitors, link) {
-		c = idle_inhibitor->data;
-		if ((inhibited = c && c->mon && VISIBLEON(c, c->mon)))
-			break;
-	}
-	wlr_idle_set_enabled(idle, seat, !inhibited);
 }
 
 void
