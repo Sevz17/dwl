@@ -6,6 +6,9 @@ static const float rootcolor[]      = {0.3, 0.3, 0.3, 1.0};
 static const float focuscolor[]     = {0.4, 0.0, 1.0, 1.0};
 static const float bordercolor[]    = {0.0, 0.0, 0.0, 0.7};
 
+#ifdef DEBUG
+static const char *const autostart[] = { NULL };
+#else
 static const char *const autostart[] = {
 	"swaylock", "--daemonize", "--image", "/usr/share/backgrounds/archlinux/wave.png", "--scaling", "fill", NULL,
 	"sh", "-c", "swaybg --image $(chbg --print) --mode fill", NULL,
@@ -17,6 +20,7 @@ static const char *const autostart[] = {
 	"redshift", "-m", "wayland", NULL,
 	NULL /* terminate */
 };
+#endif
 
 /* tagging */
 static const char *tags[] = { " ", "﬏ ", " ", " ", " ", " ", " ", " ", " ", " " };
@@ -80,8 +84,14 @@ static const int repeat_delay = 600;
 static const int tap_to_click = 1;
 static const int natural_scrolling = 0;
 
+#ifdef DEBUG
+#define MODKEY  WLR_MODIFIER_ALT
+#define ALTKEY  WLR_MODIFIER_LOGO
+#else
 #define MODKEY  WLR_MODIFIER_LOGO
 #define ALTKEY  WLR_MODIFIER_ALT
+#endif
+
 #define Control WLR_MODIFIER_CTRL
 #define Shift   WLR_MODIFIER_SHIFT
 

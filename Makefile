@@ -9,6 +9,12 @@ PKGS = wlroots wayland-server xcb xkbcommon libinput pixman-1
 CFLAGS += $(foreach p,$(PKGS),$(shell pkg-config --cflags $(p)))
 LDLIBS += $(foreach p,$(PKGS),$(shell pkg-config --libs $(p)))
 
+ifdef DEBUG
+	CFLAGS += -DDEBUG -g
+else
+	CFLAGS += -O3 -flto=auto -fgraphite-identity -floop-nest-optimize -fdevirtualize-at-ltrans -fipa-pta -fno-semantic-interposition -fuse-linker-plugin -fuse-ld=bfd
+endif
+
 all: dwl
 
 clean:
