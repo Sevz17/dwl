@@ -104,6 +104,9 @@ static const int natural_scrolling = 0;
 /* helper for spawning shell commands in the pre dwm-5.0 fashion */
 #define SHCMD(cmd) { .v = (const char*[]){ "/bin/sh", "-c", cmd, NULL } }
 
+/* helper for run programs */
+#define RUN(cmd, ...)   { .v = (const char*[]){ cmd, ##__VA_ARGS__, NULL } }
+
 /* commands */
 static const char *termcmd[] = { "foot", NULL };
 static const char *menucmd[] = {
@@ -179,76 +182,76 @@ static const Key keys[] = {
 	{ MODKEY,              Key_m,           spawn,            {.v = menucmd} },
 
 	/* wofi */
-	{ MODKEY,              Key_Menu,        spawn,            SHCMD("wofi --show=run") },
+	{ MODKEY,              Key_Menu,        spawn,            RUN("wofi", "--show=run") },
 
 	/* Terminal emulators */
 	{ MODKEY,              Key_Return,      spawn,            {.v = termcmd} },
-	{ MODKEY|Shift,        Key_Return,      spawn,            SHCMD("alacritty") },
+	{ MODKEY|Shift,        Key_Return,      spawn,            RUN("alacritty") },
 
 	/* Browsers */
-	{ MODKEY,              Key_b,           spawn,            SHCMD("microsoft-edge-dev") },
-	{ MODKEY,              Key_f,           spawn,            SHCMD("firefox") },
+	{ MODKEY,              Key_b,           spawn,            RUN("microsoft-edge-dev") },
+	{ MODKEY,              Key_f,           spawn,            RUN("firefox") },
 
 
 	/* Redshift */
-	{ MODKEY,              Key_r,           spawn,            SHCMD("redshift -O 2400") },
-	{ MODKEY|Shift,        Key_r,           spawn,            SHCMD("redshift -x") },
+	{ MODKEY,              Key_r,           spawn,            RUN("redshift", "-O", "2400") },
+	{ MODKEY|Shift,        Key_r,           spawn,            RUN("redshift", "-x") },
 
 	/* Screenshot */
 	{ MODKEY,              Key_s,           spawn,            SHCMD("grim - | swappy -f -") },
 	{ MODKEY|Shift,        Key_s,           spawn,            SHCMD("grim -g \"$(slurp)\" - | swappy -f -") },
 
 	/* Music Players */
-	{ MODKEY,              Key_p,           spawn,            SHCMD("spotify") },
+	{ MODKEY,              Key_p,           spawn,            RUN("spotify") },
 
 	/* Messengers */
-	{ MODKEY,              Key_d,           spawn,            SHCMD("discord") },
+	{ MODKEY,              Key_d,           spawn,            RUN("discord") },
 
 	/* Mail client */
-	{ MODKEY,              Key_t,           spawn,            SHCMD("thunderbird") },
+	{ MODKEY,              Key_t,           spawn,            RUN("thunderbird") },
 
 
 	/* ----------------- Hardware ------------------ */
 
 	/* Shutdown computer */
-	{ ALTKEY|Control,      Key_Delete,      spawn,            SHCMD("loginctl poweroff || systemctl poweroff") },
+	{ ALTKEY|Control,      Key_Delete,      spawn,            RUN("loginctl", "poweroff") },
 
 	/* Restart computer */
-	{ ALTKEY|Control,      Key_Insert,      spawn,            SHCMD("loginctl reboot || systemctl reboot") },
+	{ ALTKEY|Control,      Key_Insert,      spawn,            RUN("loginctl", "reboot") },
 
 	/* Hibernate computer */
-	{ MODKEY|Control,      Key_Delete,      spawn,            SHCMD("loginctl hibernate || systemctl hibernate") },
+	{ MODKEY|Control,      Key_Delete,      spawn,            RUN("loginctl", "hibernate") },
 
 	/* Suspend computer */
-	{ MODKEY|Control,      Key_Insert,      spawn,            SHCMD("loginctl suspend || systemctl suspend") },
+	{ MODKEY|Control,      Key_Insert,      spawn,            RUN("loginctl", "suspend") },
 
 	/* Volume */
-	{ MODKEY,              Key_minus,       spawn,            SHCMD("amixer set Master 2%-")},
-	{ MODKEY,              Key_equal,       spawn,            SHCMD("amixer set Master 2%+")},
-	{ MODKEY,              Key_BackSpace,   spawn,            SHCMD("amixer set Master toggle")},
+	{ MODKEY,              Key_minus,       spawn,            RUN("amixer", "set", "Master", "2%-")},
+	{ MODKEY,              Key_equal,       spawn,            RUN("amixer", "set", "Master", "2%+")},
+	{ MODKEY,              Key_BackSpace,   spawn,            RUN("amixer", "set", "Master", "toggle")},
 
 
 	/* ------------ Control music players ------------ */
 
 	/* Previus or next song */
-	{ MODKEY,              Key_F1,          spawn,            SHCMD("playerctl --ignore-player=spotify previous") },
-	{ MODKEY,              Key_F3,          spawn,            SHCMD("playerctl --ignore-player=spotify next") },
+	{ MODKEY,              Key_F1,          spawn,            RUN("playerctl", "--ignore-player=spotify", "previous") },
+	{ MODKEY,              Key_F3,          spawn,            RUN("playerctl", "--ignore-player=spotify", "next") },
  
-	{ ALTKEY,              Key_F1,          spawn,            SHCMD("playerctl --player=spotify previous") },
-	{ ALTKEY,              Key_F3,          spawn,            SHCMD("playerctl --player=spotify next") },
+	{ ALTKEY,              Key_F1,          spawn,            RUN("playerctl", "--player=spotify", "previous") },
+	{ ALTKEY,              Key_F3,          spawn,            RUN("playerctl", "--player=spotify", "next") },
 
 	/* Play or pause */
-	{ MODKEY,              Key_F2,          spawn,            SHCMD("playerctl --ignore-player=spotify play-pause") },
-	{ ALTKEY,              Key_F2,          spawn,            SHCMD("playerctl --player spotify play-pause") },
+	{ MODKEY,              Key_F2,          spawn,            RUN("playerctl", "--ignore-player=spotify", "play-pause") },
+	{ ALTKEY,              Key_F2,          spawn,            RUN("playerctl", "--player=spotify", "play-pause") },
 
 	/* Volume (all except spotify) */
-	{ MODKEY|Shift,        Key_minus,       spawn,            SHCMD("playerctl --ignore-player spotify volume 0.02-") },
-	{ MODKEY|Shift,        Key_equal,       spawn,            SHCMD("playerctl --ignore-player spotify volume 0.02+") },
+	{ MODKEY|Shift,        Key_minus,       spawn,            RUN("playerctl", "--ignore-player=spotify", "volume", "0.02-") },
+	{ MODKEY|Shift,        Key_equal,       spawn,            RUN("playerctl", "--ignore-player=spotify", "volume", "0.02+") },
 
 	/* Volume (only for spotify) */
-	{ ALTKEY,              Key_minus,       spawn,            SHCMD("vol_spotify -2%") },
-	{ ALTKEY,              Key_equal,       spawn,            SHCMD("vol_spotify +2%") },
-	{ ALTKEY,              Key_BackSpace,   spawn,            SHCMD("vol_spotify toggle-mute")},
+	{ ALTKEY,              Key_minus,       spawn,            RUN("vol_spotify", "-2%") },
+	{ ALTKEY,              Key_equal,       spawn,            RUN("vol_spotify", "+2%") },
+	{ ALTKEY,              Key_BackSpace,   spawn,            RUN("vol_spotify", "toggle-mute")},
 
 
 	/* ------------------- TTY's ------------------- */
