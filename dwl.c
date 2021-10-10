@@ -31,6 +31,7 @@
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_output_management_v1.h>
 #include <wlr/types/wlr_pointer.h>
+#include <wlr/types/wlr_presentation_time.h>
 #include <wlr/types/wlr_primary_selection.h>
 #include <wlr/types/wlr_primary_selection_v1.h>
 #include <wlr/types/wlr_screencopy_v1.h>
@@ -396,14 +397,11 @@ static struct wl_list input_popups; /* dwl_input_popup::view_link to be rendered
 static struct wlr_idle *idle;
 static struct wlr_layer_shell_v1 *layer_shell;
 static struct wlr_output_manager_v1 *output_mgr;
+static struct wlr_presentation *presentation;
 static struct wlr_virtual_keyboard_manager_v1 *virtual_keyboard_mgr;
 
 static struct wlr_cursor *cursor;
 static struct wlr_xcursor_manager *cursor_mgr;
-#ifdef XWAYLAND
-static struct wlr_xcursor *xcursor;
-static struct wlr_xcursor_manager *xcursor_mgr;
-#endif
 
 static struct wlr_seat *seat;
 struct wlr_input_method_manager_v2 *input_method_manager;
@@ -873,7 +871,7 @@ createkeyboard(struct wlr_input_device *device)
 
 	/* Prepare an XKB keymap and assign it to the keyboard. */
 	context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
-	keymap = xkb_map_new_from_names(context, &xkb_rules,
+	keymap = xkb_keymap_new_from_names(context, &xkb_rules,
 		XKB_KEYMAP_COMPILE_NO_FLAGS);
 
 	wlr_keyboard_set_keymap(device->keyboard, keymap);
@@ -1171,7 +1169,6 @@ focusclient(Client *c, int lift)
 		selmon = c->mon;
 		c->isurgent = 0;
 	}
-	printstatus();
 
 	/* Deactivate old client if focus is changing */
 	if (old && (!c || client_surface(c) != old)) {
@@ -1193,6 +1190,8 @@ focusclient(Client *c, int lift)
 			client_activate_surface(old, 0);
 		}
 	}
+
+	printstatus();
 
 	if (!c) {
 		/* With no client, all we have left is to clear focus */
@@ -1811,6 +1810,8 @@ render(struct wlr_surface *surface, int sx, int sy, void *data)
 	/* This lets the client know that we've displayed that frame and it can
 	 * prepare another one now if it likes. */
 	wlr_surface_send_frame_done(surface, rdata->when);
+
+	wlr_presentation_surface_sampled_on_output(presentation, surface, output);
 }
 
 void
@@ -2866,6 +2867,8 @@ setup(void)
 	wl_signal_add(&output_mgr->events.apply, &output_mgr_apply);
 	wl_signal_add(&output_mgr->events.test, &output_mgr_test);
 
+	presentation = wlr_presentation_create(dpy, backend);
+
 	/* create text_input-, and input_method-protocol relevant globals */
 	input_method_manager = wlr_input_method_manager_v2_create(dpy);
 	text_input_manager = wlr_text_input_manager_v3_create(dpy);
@@ -2882,18 +2885,6 @@ setup(void)
 	if (xwayland) {
 		wl_signal_add(&xwayland->events.ready, &xwayland_ready);
 		wl_signal_add(&xwayland->events.new_surface, &new_xwayland_surface);
-
-		/*
-		 * Create the XWayland cursor manager at scale 1, setting its default
-		 * pointer to match the rest of dwl.
-		 */
-		xcursor_mgr = wlr_xcursor_manager_create(NULL, 24);
-		wlr_xcursor_manager_load(xcursor_mgr, 1);
-		if ((xcursor = wlr_xcursor_manager_get_xcursor(xcursor_mgr, "left_ptr", 1)))
-			wlr_xwayland_set_cursor(xwayland,
-					xcursor->images[0]->buffer, xcursor->images[0]->width * 4,
-					xcursor->images[0]->width, xcursor->images[0]->height,
-					xcursor->images[0]->hotspot_x, xcursor->images[0]->hotspot_y);
 
 		setenv("DISPLAY", xwayland->display_name, 1);
 	} else {
