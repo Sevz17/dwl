@@ -108,6 +108,12 @@ LIBINPUT_CONFIG_TAP_MAP_LMR -- 1/2/3 finger tap maps to left/middle/right
 */
 static const enum libinput_config_tap_button_map button_map = LIBINPUT_CONFIG_TAP_MAP_LRM;
 
+/* Autostart */
+static const char *const autostart[] = {
+        "sh", "-c", "swaybg --image /xap/local/background", NULL,
+        NULL /* terminate */
+};
+
 /* If you want to use the windows key for MODKEY, use WLR_MODIFIER_LOGO */
 #define MODKEY WLR_MODIFIER_ALT
 
