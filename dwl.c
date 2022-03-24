@@ -141,6 +141,18 @@ typedef struct {
 } Keyboard;
 
 typedef struct {
+	struct wl_list link;
+	struct wlr_pointer *wlr_pointer;
+
+	struct wl_listener motion;
+	struct wl_listener motion_absolute;
+	struct wl_listener button;
+	struct wl_listener axis;
+	struct wl_listener frame;
+	struct wl_listener destroy;
+} Pointer;
+
+typedef struct {
 	/* Must be first */
 	unsigned int type; /* LayerShell */
 	int mapped;
@@ -208,6 +220,7 @@ static void chvt(const Arg *arg);
 static void cleanup(void);
 static void cleanupkeyboard(struct wl_listener *listener, void *data);
 static void cleanupmon(struct wl_listener *listener, void *data);
+static void cleanuppointer(struct wl_listener *listener, void *data);
 static void closemon(Monitor *m);
 static void commitlayersurfacenotify(struct wl_listener *listener, void *data);
 static void commitnotify(struct wl_listener *listener, void *data);
@@ -312,6 +325,7 @@ static struct wlr_xcursor_manager *cursor_mgr;
 
 static struct wlr_seat *seat;
 static struct wl_list keyboards;
+static struct wl_list pointers;
 static unsigned int cursor_mode;
 static Client *grabc;
 static int grabcx, grabcy; /* client-relative */
@@ -322,11 +336,6 @@ static struct wl_list mons;
 static Monitor *selmon;
 
 /* global event handlers */
-static struct wl_listener cursor_axis = {.notify = axisnotify};
-static struct wl_listener cursor_button = {.notify = buttonpress};
-static struct wl_listener cursor_frame = {.notify = cursorframe};
-static struct wl_listener cursor_motion = {.notify = motionrelative};
-static struct wl_listener cursor_motion_absolute = {.notify = motionabsolute};
 static struct wl_listener idle_inhibitor_create = {.notify = createidleinhibitor};
 static struct wl_listener idle_inhibitor_destroy = {.notify = destroyidleinhibitor};
 static struct wl_listener layout_change = {.notify = updatemons};
@@ -608,6 +617,29 @@ cleanupmon(struct wl_listener *listener, void *data)
 }
 
 void
+cleanuppointer(struct wl_listener *listener, void *data)
+{
+	Pointer *pt = wl_container_of(listener, pt, destroy);
+
+	wl_list_remove(&pt->destroy.link);
+	wl_list_remove(&pt->motion.link);
+	wl_list_remove(&pt->motion_absolute.link);
+	wl_list_remove(&pt->button.link);
+	wl_list_remove(&pt->axis.link);
+	wl_list_remove(&pt->frame.link);
+	wl_list_remove(&pt->link);
+
+	wlr_cursor_detach_input_device(cursor, &pt->wlr_pointer->base);
+
+	if (wl_list_empty(&pointers)) {
+		wlr_cursor_set_image(cursor, NULL, 0, 0, 0, 0, 0, 0);
+		wlr_seat_pointer_clear_focus(seat);
+	}
+
+	free(pt);
+}
+
+void
 closemon(Monitor *m)
 {
 	/* move closed monitor's clients to the focused one */
@@ -856,6 +888,30 @@ createnotify(struct wl_listener *listener, void *data)
 void
 createpointer(struct wlr_pointer *pointer)
 {
+	/*
+	 * wlr_cursor *only* displays an image on screen. It does not move around
+	 * when the pointer moves. However, we can attach input devices to it, and
+	 * it will generate aggregate events for all of them. In these events, we
+	 * can choose how we want to process them, forwarding them to clients and
+	 * moving the cursor around. More detail on this process is described in my
+	 * input handling blog post:
+	 *
+	 * https://drewdevault.com/2018/07/17/Input-handling-in-wlroots.html
+	 *
+	 * And more comments are sprinkled throughout the notify functions above.
+	 */
+	Pointer *pt = pointer->data = ecalloc(1, sizeof(*pointer));
+	pt->wlr_pointer = pointer;
+
+	wl_list_insert(&pointers, &pt->link);
+	LISTEN(&pointer->events.motion, &pt->motion, motionrelative);
+	LISTEN(&pointer->events.motion_absolute, &pt->motion_absolute,
+			motionabsolute);
+	LISTEN(&pointer->events.button, &pt->button, buttonpress);
+	LISTEN(&pointer->events.axis, &pt->axis, axisnotify);
+	LISTEN(&pointer->events.frame, &pt->frame, cursorframe);
+	LISTEN(&pointer->base.events.destroy, &pt->destroy, cleanuppointer);
+
 	if (wlr_input_device_is_libinput(&pointer->base)) {
 		struct libinput_device *libinput_device =  (struct libinput_device*)
 			wlr_libinput_get_device_handle(&pointer->base);
@@ -1113,7 +1169,7 @@ inputdevice(struct wl_listener *listener, void *data)
 	/* This event is raised by the backend when a new input device becomes
 	 * available. */
 	struct wlr_input_device *device = data;
-	uint32_t caps;
+	uint32_t caps = 0;
 
 	switch (device->type) {
 	case WLR_INPUT_DEVICE_KEYBOARD:
@@ -1128,12 +1184,16 @@ inputdevice(struct wl_listener *listener, void *data)
 	}
 
 	/* We need to let the wlr_seat know what our capabilities are, which is
-	 * communiciated to the client. In dwl we always have a cursor, even if
-	 * there are no pointer devices, so we always include that capability. */
-	/* TODO do we actually require a cursor? */
-	caps = WL_SEAT_CAPABILITY_POINTER;
+	 * communiciated to the client. */
+	if (wl_list_empty(&pointers)) {
+		wlr_cursor_set_image(cursor, NULL, 0, 0, 0, 0, 0, 0);
+		wlr_seat_pointer_clear_focus(seat);
+	} else {
+		caps |= WL_SEAT_CAPABILITY_POINTER;
+	}
 	if (!wl_list_empty(&keyboards))
 		caps |= WL_SEAT_CAPABILITY_KEYBOARD;
+
 	wlr_seat_set_capabilities(seat, caps);
 }
 
@@ -1311,8 +1371,9 @@ motionabsolute(struct wl_listener *listener, void *data)
 	 * move the mouse over the window. You could enter the window from any edge,
 	 * so we have to warp the mouse there. There is also some hardware which
 	 * emits these events. */
+	Pointer *pt = wl_container_of(listener, pt, motion_absolute);
 	struct wlr_pointer_motion_absolute_event *event = data;
-	wlr_cursor_warp_absolute(cursor, &event->pointer->base, event->x, event->y);
+	wlr_cursor_warp_absolute(cursor, &pt->wlr_pointer->base, event->x, event->y);
 	motionnotify(event->time_msec);
 }
 
@@ -1372,7 +1433,8 @@ motionrelative(struct wl_listener *listener, void *data)
 	 * special configuration applied for the specific input device which
 	 * generated the event. You can pass NULL for the device if you want to move
 	 * the cursor around without any input. */
-	wlr_cursor_move(cursor, &event->pointer->base, event->delta_x, event->delta_y);
+	Pointer *pt = wl_container_of(listener, pt, motion);
+	wlr_cursor_move(cursor, &pt->wlr_pointer->base, event->delta_x, event->delta_y);
 	motionnotify(event->time_msec);
 }
 
@@ -1926,30 +1988,13 @@ setup(void)
 	cursor_mgr = wlr_xcursor_manager_create(NULL, 24);
 
 	/*
-	 * wlr_cursor *only* displays an image on screen. It does not move around
-	 * when the pointer moves. However, we can attach input devices to it, and
-	 * it will generate aggregate events for all of them. In these events, we
-	 * can choose how we want to process them, forwarding them to clients and
-	 * moving the cursor around. More detail on this process is described in my
-	 * input handling blog post:
-	 *
-	 * https://drewdevault.com/2018/07/17/Input-handling-in-wlroots.html
-	 *
-	 * And more comments are sprinkled throughout the notify functions above.
-	 */
-	wl_signal_add(&cursor->events.motion, &cursor_motion);
-	wl_signal_add(&cursor->events.motion_absolute, &cursor_motion_absolute);
-	wl_signal_add(&cursor->events.button, &cursor_button);
-	wl_signal_add(&cursor->events.axis, &cursor_axis);
-	wl_signal_add(&cursor->events.frame, &cursor_frame);
-
-	/*
 	 * Configures a seat, which is a single "seat" at which a user sits and
 	 * operates the computer. This conceptually includes up to one keyboard,
 	 * pointer, touch, and drawing tablet device. We also rig up a listener to
 	 * let us know when new input devices are available on the backend.
 	 */
 	wl_list_init(&keyboards);
+	wl_list_init(&pointers);
 	wl_signal_add(&backend->events.new_input, &new_input);
 	virtual_keyboard_mgr = wlr_virtual_keyboard_manager_v1_create(dpy);
 	wl_signal_add(&virtual_keyboard_mgr->events.new_virtual_keyboard,
