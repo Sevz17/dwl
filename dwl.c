@@ -192,6 +192,13 @@ typedef struct {
 	float scale;
 	const Layout *lt;
 	enum wl_output_transform rr;
+	int x;
+	int y;
+	int resx;
+	int resy;
+	float rate;
+	int adaptive_true;
+	int custom;
 } MonitorRule;
 
 typedef struct {
@@ -265,6 +272,7 @@ static void requeststartdrag(struct wl_listener *listener, void *data);
 static void resize(Client *c, struct wlr_box geo, int interact);
 static void run(char *startup_cmd);
 static Client *selclient(void);
+static void set_mode(struct wlr_output *output, int custom, int width, int height, float refresh_rate);
 static void setcursor(struct wl_listener *listener, void *data);
 static void setfloating(Client *c, int floating);
 static void setfullscreen(Client *c, int fullscreen);
@@ -935,18 +943,52 @@ createlayersurface(struct wl_listener *listener, void *data)
 }
 
 void
+set_mode(struct wlr_output *output, int custom, int width, int height,
+		float refresh_rate) {
+	// Not all floating point integers can be represented exactly
+	// as (int)(1000 * mHz / 1000.f)
+	// round() the result to avoid any error
+	struct wlr_output_mode *mode, *best = NULL;
+	int mhz = (int)((refresh_rate * 1000) + 0.5);
+
+	if (wl_list_empty(&output->modes) || custom) {
+		wlr_output_set_custom_mode(output, width, height,
+			refresh_rate > 0 ? mhz : 0);
+		return;
+	}
+
+	wl_list_for_each(mode, &output->modes, link) {
+		if (mode->width == width && mode->height == height) {
+			if (mode->refresh == mhz) {
+				best = mode;
+				break;
+			}
+			if (best == NULL || mode->refresh > best->refresh) {
+				best = mode;
+			}
+		}
+	}
+	if (!best) {
+		best = wlr_output_preferred_mode(output);
+	}
+	wlr_output_set_mode(output, best);
+}
+
+void
 createmon(struct wl_listener *listener, void *data)
 {
 	/* This event is raised by the backend when a new output (aka a display or
 	 * monitor) becomes available. */
 	struct wlr_output *wlr_output = data;
+	const struct wlr_output_mode *wlr_output_mode;
+	int32_t resx,resy;
+	float rate;
 	const MonitorRule *r;
 	size_t i;
 	Monitor *m = wlr_output->data = ecalloc(1, sizeof(*m));
 	m->wlr_output = wlr_output;
 
-	wlr_output_init_render(wlr_output, alloc, drw);
-
+	wlr_output_set_mode(wlr_output, wlr_output_preferred_mode(wlr_output));
 	/* Initialize monitor state using configured rules */
 	for (i = 0; i < LENGTH(m->layers); i++)
 		wl_list_init(&m->layers[i]);
@@ -959,16 +1001,31 @@ createmon(struct wl_listener *listener, void *data)
 			wlr_xcursor_manager_load(cursor_mgr, r->scale);
 			m->lt[0] = m->lt[1] = r->lt;
 			wlr_output_set_transform(wlr_output, r->rr);
+
+			wlr_output_mode = wlr_output_preferred_mode(wlr_output);
+
+			if (r->rate)
+				rate = r->rate;
+			else
+				rate = wlr_output_mode->refresh;
+			if (r->resx)
+				resx = r->resx;
+			else
+				resx = wlr_output_mode->width;
+			if (r->resy)
+				resy = r->resy;
+			else
+				resy = wlr_output_mode->height;
+
+			set_mode(wlr_output, r->custom, resx, resy, rate);
+
+			if (r->adaptive_true)
+				wlr_output_enable_adaptive_sync(wlr_output, 1);
 			break;
 		}
 	}
 
-	/* The mode is a tuple of (width, height, refresh rate), and each
-	 * monitor supports only a specific set of modes. We just pick the
-	 * monitor's preferred mode; a more sophisticated compositor would let
-	 * the user configure it. */
-	wlr_output_set_mode(wlr_output, wlr_output_preferred_mode(wlr_output));
-	wlr_output_enable_adaptive_sync(wlr_output, 1);
+	wlr_output_init_render(wlr_output, alloc, drw);
 
 	/* Set up event listeners */
 	LISTEN(&wlr_output->events.frame, &m->frame, rendermon);
@@ -988,7 +1045,7 @@ createmon(struct wl_listener *listener, void *data)
 	 * output (such as DPI, scale factor, manufacturer, etc).
 	 */
 	m->scene_output = wlr_scene_output_create(scene, wlr_output);
-	wlr_output_layout_add_auto(output_layout, wlr_output);
+	wlr_output_layout_add(output_layout, wlr_output,r->x, r->y);
 }
 
 void
