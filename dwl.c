@@ -212,7 +212,13 @@ typedef struct {
 	float scale;
 	const Layout *lt;
 	enum wl_output_transform rr;
-	int x, y;
+	int x;
+	int y;
+	int resx;
+	int resy;
+	float rate;
+	int adaptive_true;
+	int custom;
 } MonitorRule;
 
 typedef struct {
@@ -319,6 +325,7 @@ static void requestmonstate(struct wl_listener *listener, void *data);
 static void resize(Client *c, struct wlr_box geo, int interact, int draw_borders);
 static void run(char *startup_cmd);
 static void scenebuffersetopacity(struct wlr_scene_buffer *buffer, int sx, int sy, void *user_data);
+static void set_mode(struct wlr_output *output, int custom, int width, int height, float refresh_rate);
 static void setcursor(struct wl_listener *listener, void *data);
 static void setcursorshape(struct wl_listener *listener, void *data);
 static void setfloating(Client *c, int floating);
@@ -973,6 +980,38 @@ createlocksurface(struct wl_listener *listener, void *data)
 }
 
 void
+set_mode(struct wlr_output *output, int custom, int width, int height,
+		float refresh_rate) {
+	// Not all floating point integers can be represented exactly
+	// as (int)(1000 * mHz / 1000.f)
+	// round() the result to avoid any error
+	struct wlr_output_mode *mode, *best = NULL;
+	int mhz = (int)((refresh_rate * 1000) + 0.5);
+
+	if ((wl_list_empty(&output->modes) || custom) && width && height) {
+		wlr_output_set_custom_mode(output, width, height,
+			refresh_rate > 0 ? mhz : 0);
+		return;
+	}
+
+	wl_list_for_each(mode, &output->modes, link) {
+		if (mode->width == width && mode->height == height) {
+			if (mode->refresh == mhz) {
+				best = mode;
+				break;
+			}
+			if (best == NULL || mode->refresh > best->refresh) {
+				best = mode;
+			}
+		}
+	}
+	if (!best) {
+		best = wlr_output_preferred_mode(output);
+	}
+	wlr_output_set_mode(output, best);
+}
+
+void
 createmon(struct wl_listener *listener, void *data)
 {
 	/* This event is raised by the backend when a new output (aka a display or
@@ -983,30 +1022,32 @@ createmon(struct wl_listener *listener, void *data)
 	Monitor *m = wlr_output->data = ecalloc(1, sizeof(*m));
 	m->wlr_output = wlr_output;
 
-	wlr_output_init_render(wlr_output, alloc, drw);
-
+	wlr_output_set_mode(wlr_output, wlr_output_preferred_mode(wlr_output));
 	/* Initialize monitor state using configured rules */
 	for (i = 0; i < LENGTH(m->layers); i++)
 		wl_list_init(&m->layers[i]);
 	m->tagset[0] = m->tagset[1] = 1;
 	for (r = monrules; r < END(monrules); r++) {
 		if (!r->name || strstr(wlr_output->name, r->name)) {
+			const struct wlr_output_mode *mode = wlr_output_preferred_mode(wlr_output);
 			m->mfact = r->mfact;
 			m->nmaster = r->nmaster;
 			wlr_output_set_scale(wlr_output, r->scale);
 			m->lt[0] = m->lt[1] = r->lt;
 			wlr_output_set_transform(wlr_output, r->rr);
-			m->m.x = r->x;
-			m->m.y = r->y;
+
+			set_mode(wlr_output, r->custom,
+					r->resx ? r->resx : mode ? mode->width : 0,
+					r->resy ? r->resy : mode ? mode->height : 0,
+					r->rate ? r->rate : mode ? mode->refresh : 0);
+
+			if (r->adaptive_true)
+				wlr_output_enable_adaptive_sync(wlr_output, 1);
 			break;
 		}
 	}
 
-	/* The mode is a tuple of (width, height, refresh rate), and each
-	 * monitor supports only a specific set of modes. We just pick the
-	 * monitor's preferred mode; a more sophisticated compositor would let
-	 * the user configure it. */
-	wlr_output_set_mode(wlr_output, wlr_output_preferred_mode(wlr_output));
+	wlr_output_init_render(wlr_output, alloc, drw);
 
 	/* Set up event listeners */
 	LISTEN(&wlr_output->events.frame, &m->frame, rendermon);
@@ -1039,10 +1080,10 @@ createmon(struct wl_listener *listener, void *data)
 	 * output (such as DPI, scale factor, manufacturer, etc).
 	 */
 	m->scene_output = wlr_scene_output_create(scene, wlr_output);
-	if (m->m.x < 0 || m->m.y < 0)
+	if (r->x < 0 || r->y < 0)
 		wlr_output_layout_add_auto(output_layout, wlr_output);
 	else
-		wlr_output_layout_add(output_layout, wlr_output, m->m.x, m->m.y);
+		wlr_output_layout_add(output_layout, wlr_output, r->x, r->y);
 	strncpy(m->ltsymbol, m->lt[m->sellt]->symbol, LENGTH(m->ltsymbol));
 }
 
