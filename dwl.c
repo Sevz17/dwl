@@ -586,10 +586,26 @@ applyrules(Client *c)
 void
 arrange(Monitor *m)
 {
-	Client *c;
+	LayerSurface *l;
+	Client *c, *sel = selclient();
+	int i;
 	wl_list_for_each(c, &clients, link)
 		if (c->mon == m)
 			wlr_scene_node_set_enabled(c->scene, VISIBLEON(c, m));
+
+	if (sel && sel->isfullscreen && VISIBLEON(sel, m)) {
+		for (i = 3; i > ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND; i--)
+			wl_list_for_each(l, &sel->mon->layers[i], link)
+				wlr_scene_node_set_enabled(l->scene, 0);
+
+		wl_list_for_each(c, &clients, link)
+			wlr_scene_node_set_enabled(c->scene, (sel->isfullscreen && c == sel)
+					|| !sel->isfullscreen);
+	}
+	if (!sel || (!sel->isfullscreen && VISIBLEON(sel, m)))
+		for (i = 3; i > ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND; i--)
+			wl_list_for_each(l, &m->layers[i], link)
+				wlr_scene_node_set_enabled(l->scene, 1);
 
 	if (m && m->lt[m->sellt]->arrange)
 		m->lt[m->sellt]->arrange(m);
