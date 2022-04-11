@@ -474,7 +474,9 @@ applyrules(Client *c)
 void
 arrange(Monitor *m)
 {
-	Client *c;
+	LayerSurface *l;
+	Client *c, *sel = focustop(selmon);
+	int i;
 	wl_list_for_each(c, &clients, link)
 		if (c->mon == m)
 			wlr_scene_node_set_enabled(&c->scene->node, VISIBLEON(c, m));
@@ -483,6 +485,20 @@ arrange(Monitor *m)
 			(c = focustop(m)) && c->isfullscreen);
 
 	strncpy(m->ltsymbol, m->lt[m->sellt]->symbol, LENGTH(m->ltsymbol));
+
+	if (sel && sel->isfullscreen && VISIBLEON(sel, m)) {
+		for (i = 3; i > ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND; i--)
+			wl_list_for_each(l, &sel->mon->layers[i], link)
+				wlr_scene_node_set_enabled(&l->scene->node, 0);
+
+		wl_list_for_each(c, &clients, link)
+			wlr_scene_node_set_enabled(&c->scene->node, (sel->isfullscreen && c == sel)
+					|| !sel->isfullscreen);
+	}
+	if (!sel || (!sel->isfullscreen && VISIBLEON(sel, m)))
+		for (i = 3; i > ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND; i--)
+			wl_list_for_each(l, &m->layers[i], link)
+				wlr_scene_node_set_enabled(&l->scene->node, 1);
 
 	if (m->lt[m->sellt]->arrange)
 		m->lt[m->sellt]->arrange(m);
