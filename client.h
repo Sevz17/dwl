@@ -30,16 +30,19 @@ client_surface(Client *c)
 static inline void
 client_activate_surface(struct wlr_surface *s, int activated)
 {
+	struct wlr_xdg_surface *surface;
 #ifdef XWAYLAND
-	if (wlr_surface_is_xwayland_surface(s)) {
-		wlr_xwayland_surface_activate(
-				wlr_xwayland_surface_from_wlr_surface(s), activated);
+	struct wlr_xwayland_surface *xsurface;
+	if (wlr_surface_is_xwayland_surface(s)
+			&& (xsurface = wlr_xwayland_surface_from_wlr_surface(s))) {
+		wlr_xwayland_surface_activate(xsurface, activated);
 		return;
 	}
 #endif
-	if (wlr_surface_is_xdg_surface(s))
-		wlr_xdg_toplevel_set_activated(
-				wlr_xdg_surface_from_wlr_surface(s), activated);
+	if (wlr_surface_is_xdg_surface(s)
+			&& (surface = wlr_xdg_surface_from_wlr_surface(s))
+			&& surface->role == WLR_XDG_SURFACE_ROLE_TOPLEVEL)
+		wlr_xdg_toplevel_set_activated(surface, activated);
 }
 
 static inline void
@@ -113,6 +116,8 @@ client_is_float_type(Client *c)
 				&& (size_hints->max_width == size_hints->min_width ||
 				size_hints->max_height == size_hints->min_height))
 			return 1;
+
+		return 0;
 	}
 #endif
 
@@ -210,8 +215,13 @@ client_min_size(Client *c, int *width, int *height)
 	if (client_is_x11(c)) {
 		struct wlr_xwayland_surface_size_hints *size_hints;
 		size_hints = c->surface.xwayland->size_hints;
-		*width = size_hints->min_width;
-		*height = size_hints->min_height;
+		if (size_hints) {
+			*width = size_hints->min_width;
+			*height = size_hints->min_height;
+		} else {
+			*width = 0;
+			*height = 0;
+		}
 		return;
 	}
 #endif
