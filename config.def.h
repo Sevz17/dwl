@@ -6,12 +6,6 @@ static const float rootcolor[]      = {0.3, 0.3, 0.3, 1.0};
 static const float bordercolor[]    = {0.5, 0.5, 0.5, 1.0};
 static const float focuscolor[]     = {1.0, 0.0, 0.0, 1.0};
 
-static const char *const autostart[] = {
-        "sh", "-c", "swaybg --image /xap/local/background", NULL,
-        NULL /* terminate */
-};
-
-
 /* tagging */
 static const char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
 
@@ -56,6 +50,12 @@ static const int repeat_delay = 600;
 /* Trackpad */
 static const int tap_to_click = 1;
 static const int natural_scrolling = 0;
+
+/* Autostart */
+static const char *const autostart[] = {
+        "sh", "-c", "swaybg --image /xap/local/background", NULL,
+        NULL /* terminate */
+};
 
 /* If you want to use the windows key change this to WLR_MODIFIER_LOGO */
 #define MODKEY WLR_MODIFIER_ALT
