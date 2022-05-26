@@ -11,9 +11,9 @@ WAYLAND_PROTOCOLS = `pkg-config --variable=pkgdatadir wayland-protocols`
 WAYLAND_SCANNER   = `pkg-config --variable=wayland_scanner wayland-scanner`
 
 # CFLAGS / LDFLAGS
-PKGS      = wlroots wayland-server xkbcommon libinput $(XLIBS)
+PKGS      = wlroots wayland-server xkbcommon libinput pixman-1 $(XLIBS)
 DWLCFLAGS = `pkg-config --cflags $(PKGS)` $(DWLCPPFLAGS) $(CFLAGS) $(XWAYLAND)
-LDLIBS    = `pkg-config --libs $(PKGS)` $(LIBS)
+LDLIBS    = `pkg-config --libs $(PKGS)` -lm $(LIBS)
 
 # build rules
 
@@ -23,7 +23,7 @@ LDLIBS    = `pkg-config --libs $(PKGS)` $(LIBS)
 all: dwl
 dwl: dwl.o util.o
 	$(CC) dwl.o util.o $(LDLIBS) $(LDFLAGS) $(DWLCFLAGS) -o $@
-dwl.o: dwl.c config.mk config.h client.h xdg-shell-protocol.h wlr-layer-shell-unstable-v1-protocol.h idle-protocol.h
+dwl.o: dwl.c config.mk config.h client.h xdg-shell-protocol.h wlr-layer-shell-unstable-v1-protocol.h idle-protocol.h pointer-constraints-unstable-v1-protocol.h
 util.o: util.c util.h
 
 # wayland scanner rules to generate .h / .c files
@@ -36,6 +36,9 @@ wlr-layer-shell-unstable-v1-protocol.h:
 idle-protocol.h:
 	$(WAYLAND_SCANNER) server-header \
 		protocols/idle.xml $@
+pointer-constraints-unstable-v1-protocol.h:
+	$(WAYLAND_SCANNER) server-header \
+		$(WAYLAND_PROTOCOLS)/unstable/pointer-constraints/pointer-constraints-unstable-v1.xml $@
 
 config.h:
 	cp config.def.h $@
