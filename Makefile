@@ -13,7 +13,7 @@ WAYLAND_SCANNER   = `pkg-config --variable=wayland_scanner wayland-scanner`
 # CFLAGS / LDFLAGS
 PKGS      = wlroots wayland-server xkbcommon libinput $(XLIBS)
 DWLCFLAGS = `pkg-config --cflags $(PKGS)` $(DWLCPPFLAGS) $(CFLAGS) $(XWAYLAND)
-LDLIBS    = `pkg-config --libs $(PKGS)`
+LDLIBS    = `pkg-config --libs $(PKGS)` $(LIBS)
 
 # build rules
 
@@ -22,7 +22,7 @@ LDLIBS    = `pkg-config --libs $(PKGS)`
 # to your build system yourself and provide them in the include path.
 all: dwl
 dwl: dwl.o util.o
-	$(CC) $(LDLIBS) $(LDFLAGS) -o $@ dwl.o util.o
+	$(CC) dwl.o util.o $(LDLIBS) $(LDFLAGS) -o $@
 dwl.o: dwl.c config.mk config.h client.h xdg-shell-protocol.h wlr-layer-shell-unstable-v1-protocol.h idle-protocol.h
 util.o: util.c util.h
 
