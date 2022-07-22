@@ -300,6 +300,7 @@ static void zoom(const Arg *arg);
 /* variables */
 static const char broken[] = "broken";
 static pid_t child_pid = -1;
+static struct wlr_surface *exclusive_focus;
 static struct wl_display *dpy;
 static struct wlr_backend *backend;
 static struct wlr_scene *scene;
@@ -637,11 +638,12 @@ arrangelayers(Monitor *m)
 					layersurface->layer_surface->mapped) {
 				/* Deactivate the focused client. */
 				focusclient(NULL, 0);
+				exclusive_focus = layersurface->layer_surface->surface;
 				if (kb)
-					wlr_seat_keyboard_notify_enter(seat, layersurface->layer_surface->surface,
+					wlr_seat_keyboard_notify_enter(seat, exclusive_focus,
 							kb->keycodes, kb->num_keycodes, &kb->modifiers);
 				else
-					wlr_seat_keyboard_notify_enter(seat, layersurface->layer_surface->surface, NULL, 0, NULL);
+					wlr_seat_keyboard_notify_enter(seat, exclusive_focus, NULL, 0, NULL);
 				return;
 			}
 		}
@@ -1152,6 +1154,9 @@ focusclient(Client *c, int lift)
 	struct wlr_surface *old = seat->keyboard_state.focused_surface;
 	struct wlr_keyboard *kb;
 	int i;
+	/* Do not focus clients if a layer surface is focused */
+	if (exclusive_focus)
+		return;
 
 	/* Raise client in stacking order if requested */
 	if (c && lift)
@@ -1701,7 +1706,6 @@ printstatus(void)
 				sel, urg);
 		printf("%s layout %s\n", m->wlr_output->name, m->lt[m->sellt]->symbol);
 	}
-	fflush(stdout);
 }
 
 void
@@ -1981,6 +1985,9 @@ setsel(struct wl_listener *listener, void *data)
 void
 setup(void)
 {
+	/* Force line-buffered stdout */
+	setvbuf(stdout, NULL, _IOLBF, 0);
+
 	/* The Wayland display is managed by libwayland. It handles accepting
 	 * clients from the Unix socket, manging Wayland globals, and so on. */
 	dpy = wl_display_create();
@@ -2297,6 +2304,8 @@ unmaplayersurfacenotify(struct wl_listener *listener, void *data)
 
 	layersurface->layer_surface->mapped = (layersurface->mapped = 0);
 	wlr_scene_node_set_enabled(layersurface->scene, 0);
+	if (layersurface->layer_surface->surface == exclusive_focus)
+		exclusive_focus = NULL;
 	if (layersurface->layer_surface->surface ==
 			seat->keyboard_state.focused_surface)
 		focusclient(selclient(), 1);
