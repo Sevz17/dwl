@@ -6,7 +6,7 @@ dwl is a compact, hackable compositor for Wayland based on [wlroots](https://git
 
 - Easy to understand, hack on, and extend with patches
 - One C source file (or a very small number) configurable via `config.h`
-- Limited to 2000 SLOC to promote hackability
+- Limited to 2200 SLOC to promote hackability
 - Tied to as few external dependencies as possible
 
 dwl is not meant to provide every feature under the sun. Instead, like dwm, it sticks to features which are necessary, simple, and straightforward to implement given the base on which it is built. Implemented default features are:
@@ -37,7 +37,9 @@ Feature *non-goals* for the main codebase include:
 
 ## Building dwl
 
-dwl has only two dependencies: wlroots and wayland-protocols. Simply install these (and their `-devel` versions if your distro has separate development packages) and run `make`.  If you wish to build against a Git version of wlroots, check out the [wlroots-next branch](https://github.com/djpohly/dwl/tree/wlroots-next).
+dwl has only two dependencies: `wlroots` and `wayland-protocols`. 
+
+Simply install these (and their `-devel` versions if your distro has separate development packages) and run `make`.  If you wish to build against a Git version of wlroots, check out the [wlroots-next branch](https://github.com/djpohly/dwl/tree/wlroots-next).
 
 To enable XWayland, you should also install xorg-xwayland and uncomment its flag in `config.mk`.
 
