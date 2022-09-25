@@ -33,7 +33,6 @@ wlr-layer-shell-unstable-v1-protocol.h:
 pointer-constraints-unstable-v1-protocol.h:
 	$(WAYLAND_SCANNER) server-header \
 		$(WAYLAND_PROTOCOLS)/unstable/pointer-constraints/pointer-constraints-unstable-v1.xml $@
->>>>>>> sevz17/pointer-constraints
 
 config.h:
 	cp config.def.h $@
