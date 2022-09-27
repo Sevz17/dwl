@@ -271,8 +271,9 @@ static Monitor *dirtomon(enum wlr_direction dir);
 static void focusclient(Client *c, int lift);
 static void focusmon(const Arg *arg);
 static void focusstack(const Arg *arg);
-static Client *focustop(Monitor *m);
+static Client *focustop(Monitor *m, int onlytiled);
 static void fullscreennotify(struct wl_listener *listener, void *data);
+static void hidebehindmonocle(Monitor *m);
 static void incnmaster(const Arg *arg);
 static void incgaps(const Arg *arg);
 static void incigaps(const Arg *arg);
@@ -944,7 +945,7 @@ closemon(Monitor *m)
 		if (c->mon == m)
 			setmon(c, selmon, c->tags);
 	}
-	focusclient(focustop(selmon), 1);
+	focusclient(focustop(selmon, 0), 1);
 	printstatus();
 }
 
@@ -1537,6 +1538,7 @@ focusclient(Client *c, int lift)
 		wl_list_insert(&fstack, &c->flink);
 		selmon = c->mon;
 		c->isurgent = 0;
+		hidebehindmonocle(c->mon);
 		client_restack_surface(c);
 
 		/* Don't change border color if there is an exclusive focus */
@@ -1598,7 +1600,7 @@ focusmon(const Arg *arg)
 		do /* don't switch to disabled mons */
 			selmon = dirtomon(arg->i);
 		while (!selmon->wlr_output->enabled && i++ < nmons);
-	focusclient(focustop(selmon), 1);
+	focusclient(focustop(selmon, 0), 1);
 }
 
 void
@@ -1631,12 +1633,16 @@ focusstack(const Arg *arg)
  * will focus the topmost client of this mon, when actually will
  * only return that client */
 Client *
-focustop(Monitor *m)
+focustop(Monitor *m, int onlytiled)
 {
 	Client *c;
-	wl_list_for_each(c, &fstack, flink)
-		if (VISIBLEON(c, m))
+	wl_list_for_each(c, &fstack, flink) {
+		if (VISIBLEON(c, m)) {
+			if (onlytiled && c->isfloating)
+				continue;
 			return c;
+		}
+	}
 	return NULL;
 }
 
@@ -1645,6 +1651,21 @@ fullscreennotify(struct wl_listener *listener, void *data)
 {
 	Client *c = wl_container_of(listener, c, fullscreen);
 	setfullscreen(c, client_wants_fullscreen(c));
+}
+
+void
+hidebehindmonocle(Monitor *m)
+{
+	Client *c;
+	if (m && m->lt[m->sellt]->arrange == monocle) {
+		wl_list_for_each(c, &clients, link)
+			if (VISIBLEON(c, m))
+				wlr_scene_node_set_enabled(c->scene, c->isfloating);
+
+		/* Enable top tiled client, fullscreen is considered tiled */
+		if ((c = focustop(m, 1)))
+			wlr_scene_node_set_enabled(c->scene, 1);
+	}
 }
 
 void
@@ -1938,8 +1959,7 @@ monocle(Monitor *m)
 			resize(c, (struct wlr_box){.x = m->w.x + gappoh, .y = m->w.y + gappov,
 				.width = m->w.width - 2 * gappoh, .height = m->w.height - 2 * gappov}, 0, !smartborders);
 	}
-	if ((c = focustop(m)))
-		wlr_scene_node_raise_to_top(c->scene);
+	hidebehindmonocle(m);
 }
 
 void
@@ -2219,7 +2239,7 @@ printstatus(void)
 			if (c->isurgent)
 				urg |= c->tags;
 		}
-		if ((c = focustop(m))) {
+		if ((c = focustop(m, 0))) {
 			printf("%s title %s\n", m->wlr_output->name, client_get_title(c));
 			printf("%s fullscreen %u\n", m->wlr_output->name, c->isfullscreen);
 			printf("%s floating %u\n", m->wlr_output->name, c->isfloating);
@@ -2533,7 +2553,7 @@ setmon(Client *c, Monitor *m, unsigned int newtags)
 		c->tags = newtags ? newtags : m->tagset[m->seltags]; /* assign tags of target monitor */
 		setfullscreen(c, c->isfullscreen); /* This will call arrange(c->mon) */
 	}
-	focusclient(focustop(selmon), 1);
+	focusclient(focustop(selmon, 0), 1);
 }
 
 void
@@ -2798,7 +2818,7 @@ tag(const Arg *arg)
 	Client *sel = selclient();
 	if (sel && arg->ui & TAGMASK) {
 		sel->tags = arg->ui & TAGMASK;
-		focusclient(focustop(selmon), 1);
+		focusclient(focustop(selmon, 0), 1);
 		arrange(selmon);
 	}
 	printstatus();
@@ -2888,7 +2908,7 @@ toggletag(const Arg *arg)
 	newtags = sel->tags ^ (arg->ui & TAGMASK);
 	if (newtags) {
 		sel->tags = newtags;
-		focusclient(focustop(selmon), 1);
+		focusclient(focustop(selmon, 0), 1);
 		arrange(selmon);
 	}
 	printstatus();
@@ -2901,7 +2921,7 @@ toggleview(const Arg *arg)
 
 	if (newtagset) {
 		selmon->tagset[selmon->seltags] = newtagset;
-		focusclient(focustop(selmon), 1);
+		focusclient(focustop(selmon, 0), 1);
 		arrange(selmon);
 	}
 	printstatus();
@@ -3021,7 +3041,7 @@ void
 updatetitle(struct wl_listener *listener, void *data)
 {
 	Client *c = wl_container_of(listener, c, set_title);
-	if (c == focustop(c->mon))
+	if (c == focustop(c->mon, 0))
 		printstatus();
 }
 
@@ -3044,7 +3064,7 @@ view(const Arg *arg)
 	selmon->seltags ^= 1; /* toggle sel tagset */
 	if (arg->ui & TAGMASK)
 		selmon->tagset[selmon->seltags] = arg->ui & TAGMASK;
-	focusclient(focustop(selmon), 1);
+	focusclient(focustop(selmon, 0), 1);
 	arrange(selmon);
 	printstatus();
 }
