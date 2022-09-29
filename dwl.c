@@ -153,6 +153,8 @@ typedef struct {
 	struct wl_listener commit;
 	struct wl_listener destroy;
 	struct wl_listener new_popup;
+	struct wl_listener grab_keyboard;
+	struct wl_listener keyboard_grab_destroy;
 } IMRelay;
 
 typedef struct {
@@ -300,6 +302,7 @@ static void createtextinput(struct wl_listener *listener, void *data);
 static void cursorframe(struct wl_listener *listener, void *data);
 static void destroyidleinhibitor(struct wl_listener *listener, void *data);
 static void destroyinputmethod(struct wl_listener *listener, void *data);
+static void destroyimkeyboardgrab(struct wl_listener *listener, void *data);
 static void destroyimpopup(struct wl_listener *listener, void *data);
 static void destroylayersurfacenotify(struct wl_listener *listener, void *data);
 static void destroynotify(struct wl_listener *listener, void *data);
@@ -314,6 +317,8 @@ static void focusmon(const Arg *arg);
 static void focusstack(const Arg *arg);
 static Client *focustop(Monitor *m);
 static void fullscreennotify(struct wl_listener *listener, void *data);
+static struct wlr_input_method_keyboard_grab_v2 *getimgrabfromkeyboard(Keyboard *kb);
+static void imgrabkeyboard(struct wl_listener *listener, void *data);
 static void impopupfocusedsurfaceunmap(struct wl_listener *listener, void *data);
 static void impopupupdate(InputPopup *popup);
 static void impopupsetfocus(InputPopup *popup, struct wlr_surface *surface);
@@ -1024,6 +1029,7 @@ createinputmethod(struct wl_listener *listener, void *data)
 	LISTEN(&relay->input_method->events.commit, &relay->commit, commitinputmethod);
 	LISTEN(&relay->input_method->events.new_popup_surface, &relay->new_popup, createimpopup);
 	LISTEN(&relay->input_method->events.destroy, &relay->destroy, destroyinputmethod);
+	LISTEN(&relay->input_method->events.grab_keyboard, &relay->grab_keyboard, imgrabkeyboard);
 
 	text_input = relaygetfocusabletextinput(relay);
 	if (text_input) {
@@ -1313,6 +1319,21 @@ destroyinputmethod(struct wl_listener *listener, void *data)
 }
 
 void
+destroyimkeyboardgrab(struct wl_listener *listener, void *data)
+{
+	IMRelay *relay = wl_container_of(listener, relay, keyboard_grab_destroy);
+	struct wlr_input_method_keyboard_grab_v2 *keyboard_grab = data;
+	wl_list_remove(&relay->keyboard_grab_destroy.link);
+
+	if (keyboard_grab->keyboard) {
+		/* send modifier state to original client */
+		Keyboard *kb = keyboard_grab->keyboard->data;
+		wlr_seat_set_keyboard(seat, kb->device);
+		wlr_seat_keyboard_notify_modifiers(seat, &kb->device->keyboard->modifiers);
+	}
+}
+
+void
 destroyimpopup(struct wl_listener *listener, void *data)
 {
 	InputPopup *popup = wl_container_of(listener, popup, destroy);
@@ -1551,6 +1572,44 @@ fullscreennotify(struct wl_listener *listener, void *data)
 {
 	Client *c = wl_container_of(listener, c, fullscreen);
 	setfullscreen(c, client_wants_fullscreen(c));
+}
+
+/* Get keyboard grab of the seat from sway_keyboard if we should forward events
+ * to it.
+ *
+ * Returns NULL if the keyboard is not grabbed by an input method,
+ * or if event is from virtual keyboard of the same client as grab.
+ * TODO: see https://github.com/swaywm/wlroots/issues/2322
+ */
+struct wlr_input_method_keyboard_grab_v2 *
+getimgrabfromkeyboard(Keyboard *kb)
+{
+	struct wlr_input_method_v2 *input_method = input_method_relay.input_method;
+	struct wlr_virtual_keyboard_v1 *virtual_keyboard =
+		wlr_input_device_get_virtual_keyboard(kb->device);
+	if (!input_method || !input_method->keyboard_grab || (virtual_keyboard &&
+				wl_resource_get_client(virtual_keyboard->resource) ==
+				wl_resource_get_client(input_method->keyboard_grab->resource))) {
+		return NULL;
+	}
+	return input_method->keyboard_grab;
+}
+
+void
+imgrabkeyboard(struct wl_listener *listener, void *data)
+{
+	IMRelay *relay = wl_container_of(listener, relay, grab_keyboard);
+	struct wlr_input_method_keyboard_grab_v2 *keyboard_grab = data;
+
+	// send modifier state to grab
+	struct wlr_keyboard *active_keyboard = wlr_seat_get_keyboard(seat);
+	wlr_input_method_keyboard_grab_v2_set_keyboard(keyboard_grab,
+		active_keyboard);
+	wlr_input_method_keyboard_grab_v2_send_modifiers(keyboard_grab,
+		&active_keyboard->modifiers);
+
+	LISTEN(&keyboard_grab->events.destroy, &relay->keyboard_grab_destroy,
+			destroyimkeyboardgrab);
 }
 
 void
@@ -1811,8 +1870,18 @@ keypress(struct wl_listener *listener, void *data)
 			handled = keybinding(mods, syms[i]) || handled;
 
 	if (!handled) {
+		/* if there is a keyboard grab, we send the key there */
+		struct wlr_input_method_keyboard_grab_v2 *kb_grab = getimgrabfromkeyboard(kb);
+
 		/* Pass unhandled keycodes along to the client. */
 		wlr_seat_set_keyboard(seat, kb->device);
+		if (kb_grab) {
+			wlr_input_method_keyboard_grab_v2_set_keyboard(kb_grab,
+				kb->device->keyboard);
+			wlr_input_method_keyboard_grab_v2_send_key(kb_grab,
+				event->time_msec, event->keycode, event->state);
+			return;
+		}
 		wlr_seat_keyboard_notify_key(seat, event->time_msec,
 			event->keycode, event->state);
 	}
@@ -1824,6 +1893,8 @@ keypressmod(struct wl_listener *listener, void *data)
 	/* This event is raised when a modifier key, such as shift or alt, is
 	 * pressed. We simply communicate this to the client. */
 	Keyboard *kb = wl_container_of(listener, kb, modifiers);
+	struct wlr_input_method_keyboard_grab_v2 *kb_grab = getimgrabfromkeyboard(kb);
+
 	/*
 	 * A seat can only have one keyboard, but this is a limitation of the
 	 * Wayland protocol - not wlroots. We assign all connected keyboards to the
@@ -1831,9 +1902,14 @@ keypressmod(struct wl_listener *listener, void *data)
 	 * wlr_seat handles this transparently.
 	 */
 	wlr_seat_set_keyboard(seat, kb->device);
-	/* Send modifiers to the client. */
-	wlr_seat_keyboard_notify_modifiers(seat,
-		&kb->device->keyboard->modifiers);
+	if (kb_grab) {
+		wlr_input_method_keyboard_grab_v2_send_modifiers(kb_grab,
+				&kb->device->keyboard->modifiers);
+	} else {
+		/* Send modifiers to the client. */
+		wlr_seat_keyboard_notify_modifiers(seat,
+				&kb->device->keyboard->modifiers);
+	}
 }
 
 void
