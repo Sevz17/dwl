@@ -145,13 +145,34 @@ typedef struct {
  */
 typedef struct {
 	struct wl_list text_inputs; // TextInput.link
+	struct wl_list input_popups; /* InputPopup.link */
 	struct wlr_input_method_v2 *input_method; /* Can be NULL */
 
 	struct wl_listener new_text_input;
 	struct wl_listener new;
 	struct wl_listener commit;
 	struct wl_listener destroy;
+	struct wl_listener new_popup;
 } IMRelay;
+
+typedef struct {
+	IMRelay *relay;
+	struct wlr_input_popup_surface_v2 *popup_surface;
+
+	struct wlr_scene_node *scene;
+	struct wlr_scene_node *scene_surface;
+
+	int x, y;
+	bool visible;
+
+	struct wl_list link;
+
+	struct wl_listener map;
+	struct wl_listener unmap;
+	struct wl_listener destroy;
+	struct wl_listener commit;
+	struct wl_listener focused_surface_unmap;
+} InputPopup;
 
 typedef struct {
 	uint32_t mod;
@@ -262,11 +283,13 @@ static void cleanup(void);
 static void cleanupkeyboard(struct wl_listener *listener, void *data);
 static void cleanupmon(struct wl_listener *listener, void *data);
 static void closemon(Monitor *m);
+static void commitimpopup(struct wl_listener *listener, void *data);
 static void commitinputmethod(struct wl_listener *listener, void *data);
 static void commitlayersurfacenotify(struct wl_listener *listener, void *data);
 static void commitnotify(struct wl_listener *listener, void *data);
 static void committextinput(struct wl_listener *listener, void *data);
 static void createidleinhibitor(struct wl_listener *listener, void *data);
+static void createimpopup(struct wl_listener *listener, void *data);
 static void createinputmethod(struct wl_listener *listener, void *data);
 static void createkeyboard(struct wlr_input_device *device);
 static void createlayersurface(struct wl_listener *listener, void *data);
@@ -277,6 +300,7 @@ static void createtextinput(struct wl_listener *listener, void *data);
 static void cursorframe(struct wl_listener *listener, void *data);
 static void destroyidleinhibitor(struct wl_listener *listener, void *data);
 static void destroyinputmethod(struct wl_listener *listener, void *data);
+static void destroyimpopup(struct wl_listener *listener, void *data);
 static void destroylayersurfacenotify(struct wl_listener *listener, void *data);
 static void destroynotify(struct wl_listener *listener, void *data);
 static void destroypendingfocusedsurface(struct wl_listener *listener, void *data);
@@ -290,6 +314,9 @@ static void focusmon(const Arg *arg);
 static void focusstack(const Arg *arg);
 static Client *focustop(Monitor *m);
 static void fullscreennotify(struct wl_listener *listener, void *data);
+static void impopupfocusedsurfaceunmap(struct wl_listener *listener, void *data);
+static void impopupupdate(InputPopup *popup);
+static void impopupsetfocus(InputPopup *popup, struct wlr_surface *surface);
 static void imrelaydisabletextinput(IMRelay *relay, TextInput *text_input);
 static void imrelaysendstate(IMRelay *relay, struct wlr_text_input_v3 *input);
 static void imrelaysetfocus(IMRelay *relay, struct wlr_surface *surface);
@@ -299,6 +326,7 @@ static int keybinding(uint32_t mods, xkb_keysym_t sym);
 static void keypress(struct wl_listener *listener, void *data);
 static void keypressmod(struct wl_listener *listener, void *data);
 static void killclient(const Arg *arg);
+static void mapimpopup(struct wl_listener *listener, void *data);
 static void maplayersurfacenotify(struct wl_listener *listener, void *data);
 static void mapnotify(struct wl_listener *listener, void *data);
 static void monocle(Monitor *m);
@@ -341,6 +369,7 @@ static void togglefloating(const Arg *arg);
 static void togglefullscreen(const Arg *arg);
 static void toggletag(const Arg *arg);
 static void toggleview(const Arg *arg);
+static void unmapimpopup(struct wl_listener *listener, void *data);
 static void unmaplayersurfacenotify(struct wl_listener *listener, void *data);
 static void unmapnotify(struct wl_listener *listener, void *data);
 static void updatemons(struct wl_listener *listener, void *data);
@@ -370,6 +399,7 @@ static struct wlr_xdg_shell *xdg_shell;
 static struct wlr_xdg_activation_v1 *activation;
 static struct wl_list clients; /* tiling order */
 static struct wl_list fstack;  /* focus order */
+
 static struct wlr_idle *idle;
 static struct wlr_idle_inhibit_manager_v1 *idle_inhibit_mgr;
 static struct wlr_input_inhibit_manager *input_inhibit_mgr;
@@ -855,6 +885,13 @@ closemon(Monitor *m)
 }
 
 void
+commitimpopup(struct wl_listener *listener, void *data)
+{
+	InputPopup *popup = wl_container_of(listener, popup, commit);
+	impopupupdate(popup);
+}
+
+void
 commitinputmethod(struct wl_listener *listener, void *data)
 {
 	struct wlr_input_method_v2 *context;
@@ -948,6 +985,30 @@ createidleinhibitor(struct wl_listener *listener, void *data)
 }
 
 void
+createimpopup(struct wl_listener *listener, void *data)
+{
+	TextInput *text_input;
+	IMRelay *relay = wl_container_of(listener, relay, new_popup);
+	InputPopup *popup = ecalloc(1, sizeof(*popup));
+	popup->relay = relay;
+	popup->popup_surface = data;
+	popup->popup_surface->data = popup;
+
+	LISTEN(&popup->popup_surface->events.map, &popup->map, mapimpopup);
+	LISTEN(&popup->popup_surface->events.unmap, &popup->unmap, unmapimpopup);
+	LISTEN(&popup->popup_surface->events.destroy, &popup->destroy, destroyimpopup);
+	LISTEN(&popup->popup_surface->surface->events.commit, &popup->commit, commitimpopup);
+
+	wl_list_init(&popup->focused_surface_unmap.link);
+	popup->focused_surface_unmap.notify = impopupfocusedsurfaceunmap;
+
+	text_input = relaygetfocusedtextinput(relay);
+	impopupsetfocus(popup, text_input ? text_input->input->focused_surface : NULL);
+
+	wl_list_insert(&relay->input_popups, &popup->link);
+}
+
+void
 createinputmethod(struct wl_listener *listener, void *data)
 {
 	TextInput *text_input;
@@ -961,6 +1022,7 @@ createinputmethod(struct wl_listener *listener, void *data)
 
 	relay->input_method = input_method;
 	LISTEN(&relay->input_method->events.commit, &relay->commit, commitinputmethod);
+	LISTEN(&relay->input_method->events.new_popup_surface, &relay->new_popup, createimpopup);
 	LISTEN(&relay->input_method->events.destroy, &relay->destroy, destroyinputmethod);
 
 	text_input = relaygetfocusabletextinput(relay);
@@ -1137,6 +1199,7 @@ createnotify(struct wl_listener *listener, void *data)
 	} else if (xdg_surface->role == WLR_XDG_SURFACE_ROLE_NONE)
 		return;
 
+
 	/* Allocate a Client for this surface */
 	c = xdg_surface->data = ecalloc(1, sizeof(*c));
 	c->surface.xdg = xdg_surface;
@@ -1247,6 +1310,19 @@ destroyinputmethod(struct wl_listener *listener, void *data)
 			text_input->input->focused_surface);
 		wlr_text_input_v3_send_leave(text_input->input);
 	}
+}
+
+void
+destroyimpopup(struct wl_listener *listener, void *data)
+{
+	InputPopup *popup = wl_container_of(listener, popup, destroy);
+	wl_list_remove(&popup->focused_surface_unmap.link);
+	wl_list_remove(&popup->commit.link);
+	wl_list_remove(&popup->destroy.link);
+	wl_list_remove(&popup->unmap.link);
+	wl_list_remove(&popup->map.link);
+	wl_list_remove(&popup->link);
+	free(popup);
 }
 
 void
@@ -1478,6 +1554,121 @@ fullscreennotify(struct wl_listener *listener, void *data)
 }
 
 void
+impopupfocusedsurfaceunmap(struct wl_listener *listener, void *data)
+{
+	InputPopup *popup = wl_container_of(listener, popup, focused_surface_unmap);
+	impopupupdate(popup);
+}
+
+void
+impopupupdate(InputPopup *popup)
+{
+	TextInput *text_input = relaygetfocusedtextinput(popup->relay);
+	struct wlr_surface *focused_surface;
+	struct wlr_box output_box, parent_box, cursor_box;
+	int x1, x2, y1, y2, x, y, available_right, available_left, available_down,
+			available_up, popup_width, popup_height;
+	int cursor_rect, x1_in_bounds, y1_in_bounds, x2_in_bounds, y2_in_bounds;
+	Client *c;
+
+	if (!popup->popup_surface->mapped
+			|| !text_input || !text_input->input->focused_surface)
+		return;
+
+	cursor_rect = text_input->input->current.features
+		& WLR_TEXT_INPUT_V3_FEATURE_CURSOR_RECTANGLE;
+	focused_surface = text_input->input->focused_surface;
+	cursor_box = text_input->input->current.cursor_rectangle;
+
+	if (wlr_surface_is_layer_surface(focused_surface)) {
+		struct wlr_layer_surface_v1 *wlr_layer_surface =
+			wlr_layer_surface_v1_from_wlr_surface(focused_surface);
+		LayerSurface* layersurface = wlr_layer_surface->data;
+		output_box = layersurface->mon->m;
+		parent_box = layersurface->geom;
+	} else if ((c = client_from_wlr_surface(focused_surface))) {
+		output_box = c->mon->m;
+		parent_box = c->geom;
+		parent_box.x += c->bw;
+		parent_box.y += c->bw;
+	}
+
+	if (!cursor_rect) {
+		cursor_box = parent_box;
+		cursor_box.x = 0;
+		cursor_box.y = 0;
+	}
+
+	popup_width = popup->popup_surface->surface->current.width;
+	popup_height = popup->popup_surface->surface->current.height;
+	x = x1 = parent_box.x + cursor_box.x;
+	y = x2 = parent_box.x + cursor_box.x + cursor_box.width;
+	y1 = parent_box.y + cursor_box.y;
+	y2 = parent_box.y + cursor_box.y + cursor_box.height;
+
+	available_right = output_box.x + output_box.width - x1;
+	available_left = x2 - output_box.x;
+	if (available_right < popup_width && available_left > available_right) {
+		x = x2 - popup_width;
+	}
+
+	available_down = output_box.y + output_box.height - y2;
+	available_up = y1 - output_box.y;
+	if (available_down < popup_height && available_up > available_down) {
+		y = y1 - popup_height;
+	}
+
+	popup->x = x;
+	popup->y = y;
+
+	// Hide popup if cursor position is completely out of bounds
+	x1_in_bounds = cursor_box.x >= 0 && cursor_box.x < parent_box.width;
+	y1_in_bounds = cursor_box.y >= 0 && cursor_box.y < parent_box.height;
+	x2_in_bounds = cursor_box.x + cursor_box.width >= 0
+		&& cursor_box.x + cursor_box.width < parent_box.width;
+	y2_in_bounds = (cursor_box.y + cursor_box.height >= 0
+		&& cursor_box.y + cursor_box.height < parent_box.height);
+	popup->visible =
+		(x1_in_bounds && y1_in_bounds) || (x2_in_bounds && y2_in_bounds);
+
+	if (cursor_rect) {
+		struct wlr_box box = {
+			.x = x1 - x,
+			.y = y1 - y,
+			.width = cursor_box.width,
+			.height = cursor_box.height,
+		};
+		wlr_input_popup_surface_v2_send_text_input_rectangle(
+			popup->popup_surface, &box);
+	}
+}
+
+void
+impopupsetfocus(InputPopup *popup, struct wlr_surface *surface)
+{
+	Client* c;
+	LayerSurface* layersurface;
+
+	wl_list_remove(&popup->focused_surface_unmap.link);
+
+	if (wlr_surface_is_layer_surface(surface)) {
+		layersurface = wlr_layer_surface_v1_from_wlr_surface(surface)->data;
+		wl_signal_add(&layersurface->layer_surface->events.unmap,
+				&popup->focused_surface_unmap);
+	} else if ((c = client_from_wlr_surface(surface))) {
+#ifdef XWAYLAND
+		if (c->type != XDGShell)
+			wl_signal_add(&c->surface.xwayland->events.unmap,
+				&popup->focused_surface_unmap);
+		else
+#endif
+			wl_signal_add(&c->surface.xdg->events.unmap,
+				&popup->focused_surface_unmap);
+	}
+	impopupupdate(popup);
+}
+
+void
 imrelaydisabletextinput(IMRelay *relay, TextInput *text_input)
 {
 	if (!relay->input_method)
@@ -1651,6 +1842,20 @@ killclient(const Arg *arg)
 	Client *sel = selclient();
 	if (sel)
 		client_send_close(sel);
+}
+
+static void mapimpopup(struct wl_listener *listener, void *data)
+{
+	InputPopup *popup = wl_container_of(listener, popup, map);
+
+	popup->scene = &wlr_scene_tree_create(layers[LyrFloat])->node;
+	popup->scene_surface = wlr_scene_subsurface_tree_create(popup->scene,
+			popup->popup_surface->surface);
+	popup->scene_surface->data = popup;
+
+	impopupupdate(popup);
+
+	wlr_scene_node_set_position(popup->scene, popup->x, popup->y);
 }
 
 void
@@ -2474,6 +2679,7 @@ setup(void)
 	text_input_mgr = wlr_text_input_manager_v3_create(dpy);
 
 	wl_list_init(&input_method_relay.text_inputs);
+	wl_list_init(&input_method_relay.input_popups);
 	LISTEN(&text_input_mgr->events.text_input, &input_method_relay.new_text_input,
 			createtextinput);
 	LISTEN(&input_method_mgr->events.input_method, &input_method_relay.new,
@@ -2647,6 +2853,14 @@ toggleview(const Arg *arg)
 		arrange(selmon);
 	}
 	printstatus();
+}
+
+void
+unmapimpopup(struct wl_listener *listener, void *data)
+{
+	InputPopup *popup = wl_container_of(listener, popup, unmap);
+	impopupupdate(popup);
+	wlr_scene_node_destroy(popup->scene);
 }
 
 void
