@@ -710,7 +710,7 @@ buttonpress(struct wl_listener *listener, void *data)
 			 * we will send an enter event after which the client will provide us
 			 * a cursor surface */
 			wlr_seat_pointer_clear_focus(seat);
-			motionnotify(0);
+			motionnotify(0, NULL, 0, 0, 0, 0);
 			/* Drop the window off on its new monitor */
 			selmon = xytomon(cursor->x, cursor->y);
 			setmon(grabc, selmon, 0);
