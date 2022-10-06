@@ -8,6 +8,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/resource.h>
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
@@ -321,6 +322,8 @@ static void zoom(const Arg *arg);
 
 /* variables */
 static const char broken[] = "broken";
+static struct rlimit oldrlimit;
+static struct rlimit newrlimit;
 static const char *cursor_image = "left_ptr";
 static pid_t child_pid = -1;
 static int locked;
@@ -1971,6 +1974,7 @@ run(char *startup_cmd)
 		if ((child_pid = fork()) < 0)
 			die("startup: fork:");
 		if (child_pid == 0) {
+			setrlimit(RLIMIT_CORE, &oldrlimit);
 			dup2(piperw[0], STDIN_FILENO);
 			close(piperw[0]);
 			close(piperw[1]);
@@ -2313,6 +2317,7 @@ void
 spawn(const Arg *arg)
 {
 	if (fork() == 0) {
+		setrlimit(RLIMIT_CORE, &oldrlimit);
 		dup2(STDERR_FILENO, STDOUT_FILENO);
 		setsid();
 		execvp(((char **)arg->v)[0], (char **)arg->v);
@@ -2792,6 +2797,10 @@ main(int argc, char *argv[])
 {
 	char *startup_cmd = NULL;
 	int c;
+
+	getrlimit(RLIMIT_CORE, &oldrlimit);
+	newrlimit.rlim_cur = newrlimit.rlim_max = oldrlimit.rlim_max;
+	setrlimit(RLIMIT_CORE, &newrlimit);
 
 	while ((c = getopt(argc, argv, "s:hv")) != -1) {
 		if (c == 's')
