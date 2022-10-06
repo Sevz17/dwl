@@ -1,6 +1,7 @@
 /*
  * See LICENSE file for copyright and license details.
  */
+#include <fcntl.h>
 #include <getopt.h>
 #include <libinput.h>
 #include <linux/input-event-codes.h>
@@ -380,6 +381,8 @@ static void zoom(const Arg *arg);
 
 /* variables */
 static const char broken[] = "broken";
+static char *status_file; /* File where print status */
+static int status_file_fd;
 static struct rlimit oldrlimit;
 static struct rlimit newrlimit;
 static pid_t child_pid = -1;
@@ -1703,6 +1706,12 @@ handlesig(int signo)
 		}
 	} else if (signo == SIGINT || signo == SIGTERM) {
 		quit(NULL);
+	} else if (signo == SIGPIPE) {
+		close(status_file_fd);
+		status_file_fd = -1;
+		if ((status_file_fd = open(status_file, O_CLOEXEC | O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR)) < 0)
+			return;
+		dup2(status_file_fd, STDOUT_FILENO);
 	}
 }
 
@@ -2481,10 +2490,16 @@ run(char *startup_cmd)
 {
 	/* Add a Unix socket to the Wayland display. */
 	const char *socket = wl_display_add_socket_auto(dpy);
+	const char *xrd = getenv("XDG_RUNTIME_DIR");
+	size_t size = strlen(xrd) + strlen("/dwl-") + strlen(socket) + 1;
 	if (!socket)
 		die("startup: display_add_socket_auto");
 	setenv("WAYLAND_DISPLAY", socket, 1);
 
+	status_file = ecalloc(size, sizeof(*status_file));
+	sprintf(status_file, "%s/dwl-%s", xrd, socket);
+	if ((status_file_fd = open(status_file, O_CLOEXEC | O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR)) > 0)
+		dup2(status_file_fd, STDOUT_FILENO);
 	/* Start the backend. This will enumerate outputs and inputs, become the DRM
 	 * master, etc */
 	if (!wlr_backend_start(backend))
@@ -2493,22 +2508,13 @@ run(char *startup_cmd)
 	/* Now that the socket exists and the backend is started, run the startup command */
 	autostartexec();
 	if (startup_cmd) {
-		int piperw[2];
-		if (pipe(piperw) < 0)
-			die("startup: pipe:");
 		if ((child_pid = fork()) < 0)
 			die("startup: fork:");
 		if (child_pid == 0) {
 			setrlimit(RLIMIT_CORE, &oldrlimit);
-			dup2(piperw[0], STDIN_FILENO);
-			close(piperw[0]);
-			close(piperw[1]);
 			execl("/bin/sh", "/bin/sh", "-c", startup_cmd, NULL);
 			die("startup: execl:");
 		}
-		dup2(piperw[1], STDOUT_FILENO);
-		close(piperw[1]);
-		close(piperw[0]);
 	}
 	printstatus();
 
@@ -2528,6 +2534,9 @@ run(char *startup_cmd)
 	 * loop configuration to listen to libinput events, DRM events, generate
 	 * frame events at the refresh rate, and so on. */
 	wl_display_run(dpy);
+	close(status_file_fd);
+	unlink(status_file);
+	free(status_file);
 }
 
 void
