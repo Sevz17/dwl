@@ -2,6 +2,7 @@
  * See LICENSE file for copyright and license details.
  */
 #include <assert.h>
+#include <fcntl.h>
 #include <getopt.h>
 #include <libinput.h>
 #include <limits.h>
@@ -321,6 +322,7 @@ static void setpsel(struct wl_listener *listener, void *data);
 static void setsel(struct wl_listener *listener, void *data);
 static void setup(void);
 static void sigchld(int unused);
+static void sigpipe(int signo);
 static void spawn(const Arg *arg);
 static void startdrag(struct wl_listener *listener, void *data);
 static void tag(const Arg *arg);
@@ -345,6 +347,8 @@ static void zoom(const Arg *arg);
 
 /* variables */
 static const char broken[] = "broken";
+static volatile sig_atomic_t no_retry = 0;
+static char *filename; /* File where print status */
 static struct rlimit oldrlimit;
 static struct rlimit newrlimit;
 static const char *cursor_image = "left_ptr";
@@ -2356,10 +2360,17 @@ run(char *startup_cmd)
 {
 	/* Add a Unix socket to the Wayland display. */
 	const char *socket = wl_display_add_socket_auto(dpy);
+	const char *xrd = getenv("XDG_RUNTIME_DIR");
+	int fd;
+	size_t size = strlen(xrd) + strlen("/dwl-") + strlen(socket) + 1;
 	if (!socket)
 		die("startup: display_add_socket_auto");
 	setenv("WAYLAND_DISPLAY", socket, 1);
 
+	filename = ecalloc(size, sizeof(*filename));
+	sprintf(filename, "%s/dwl-%s", xrd, socket);
+	if ((fd = open(filename, O_CLOEXEC | O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR)) > 0)
+		dup2(fd, STDOUT_FILENO);
 	/* Start the backend. This will enumerate outputs and inputs, become the DRM
 	 * master, etc */
 	if (!wlr_backend_start(backend))
@@ -2368,25 +2379,15 @@ run(char *startup_cmd)
 	/* Now that the socket exists and the backend is started, run the startup command */
 	autostartexec();
 	if (startup_cmd) {
-		int piperw[2];
-		if (pipe(piperw) < 0)
-			die("startup: pipe:");
 		if ((child_pid = fork()) < 0)
 			die("startup: fork:");
 		if (child_pid == 0) {
 			setrlimit(RLIMIT_CORE, &oldrlimit);
-			dup2(piperw[0], STDIN_FILENO);
-			close(piperw[0]);
-			close(piperw[1]);
 			execl("/bin/sh", "/bin/sh", "-c", startup_cmd, NULL);
 			die("startup: execl:");
 		}
-		dup2(piperw[1], STDOUT_FILENO);
-		close(piperw[1]);
-		close(piperw[0]);
 	}
-	/* If nobody is reading the status output, don't terminate */
-	signal(SIGPIPE, SIG_IGN);
+	signal(SIGPIPE, sigpipe);
 	printstatus();
 
 	/* At this point the outputs are initialized, choose initial selmon based on
@@ -2405,6 +2406,9 @@ run(char *startup_cmd)
 	 * loop configuration to listen to libinput events, DRM events, generate
 	 * frame events at the refresh rate, and so on. */
 	wl_display_run(dpy);
+	close(fd);
+	unlink(filename);
+	free(filename);
 }
 
 Client *
@@ -2790,6 +2794,22 @@ sigchld(int unused)
 			}
 		}
 	}
+}
+
+void
+sigpipe(int signo)
+{
+	int fd;
+	if (no_retry && signal(SIGPIPE, SIG_IGN) == SIG_ERR)
+		die("Can't install sigpipe handler:");
+
+	if ((fd = open(filename, O_CLOEXEC | O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR)) > 0)
+		dup2(fd, STDOUT_FILENO);
+	else
+		no_retry = 1;
+
+	if (signal(SIGPIPE, sigpipe) == SIG_ERR)
+		die("Can't install sigpipe handler:");
 }
 
 void
