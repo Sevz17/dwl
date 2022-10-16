@@ -436,7 +436,13 @@ static Atom netatom[NetLast];
 
 /* configuration, allows nested code to access above variables */
 #include "push.h"
-#include "config.h"
+
+#ifdef USE_CONFIG_DEF_H
+#  include "config.def.h"
+#else
+#  include "config.h"
+#endif
+
 #include "push.c"
 
 /* attempt to encapsulate suck into one file */
