@@ -951,7 +951,7 @@ set_mode(struct wlr_output *output, int custom, int width, int height,
 	struct wlr_output_mode *mode, *best = NULL;
 	int mhz = (int)((refresh_rate * 1000) + 0.5);
 
-	if (wl_list_empty(&output->modes) || custom) {
+	if ((wl_list_empty(&output->modes) || custom) && width && height) {
 		wlr_output_set_custom_mode(output, width, height,
 			refresh_rate > 0 ? mhz : 0);
 		return;
@@ -980,9 +980,6 @@ createmon(struct wl_listener *listener, void *data)
 	/* This event is raised by the backend when a new output (aka a display or
 	 * monitor) becomes available. */
 	struct wlr_output *wlr_output = data;
-	const struct wlr_output_mode *wlr_output_mode;
-	int32_t resx,resy;
-	float rate;
 	const MonitorRule *r;
 	size_t i;
 	Monitor *m = wlr_output->data = ecalloc(1, sizeof(*m));
@@ -995,6 +992,7 @@ createmon(struct wl_listener *listener, void *data)
 	m->tagset[0] = m->tagset[1] = 1;
 	for (r = monrules; r < END(monrules); r++) {
 		if (!r->name || strstr(wlr_output->name, r->name)) {
+			const struct wlr_output_mode *mode = wlr_output_preferred_mode(wlr_output);
 			m->mfact = r->mfact;
 			m->nmaster = r->nmaster;
 			wlr_output_set_scale(wlr_output, r->scale);
@@ -1002,22 +1000,10 @@ createmon(struct wl_listener *listener, void *data)
 			m->lt[0] = m->lt[1] = r->lt;
 			wlr_output_set_transform(wlr_output, r->rr);
 
-			wlr_output_mode = wlr_output_preferred_mode(wlr_output);
-
-			if (r->rate)
-				rate = r->rate;
-			else
-				rate = wlr_output_mode->refresh;
-			if (r->resx)
-				resx = r->resx;
-			else
-				resx = wlr_output_mode->width;
-			if (r->resy)
-				resy = r->resy;
-			else
-				resy = wlr_output_mode->height;
-
-			set_mode(wlr_output, r->custom, resx, resy, rate);
+			set_mode(wlr_output, r->custom,
+					r->resx ? r->resx : mode ? mode->width : 0,
+					r->resy ? r->resy : mode ? mode->height : 0,
+					r->rate ? r->rate : mode ? mode->refresh : 0);
 
 			if (r->adaptive_true)
 				wlr_output_enable_adaptive_sync(wlr_output, 1);
