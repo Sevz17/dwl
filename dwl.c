@@ -455,7 +455,11 @@ static xcb_atom_t netatom[NetLast];
 #endif
 
 /* configuration, allows nested code to access above variables */
-#include "config.h"
+#ifdef USE_CONFIG_DEF_H
+#  include "config.def.h"
+#else
+#  include "config.h"
+#endif
 
 /* attempt to encapsulate suck into one file */
 #include "client.h"

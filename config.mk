@@ -8,6 +8,9 @@ PREFIX = /usr/local
 MANDIR = $(PREFIX)/share/man
 DATADIR = $(PREFIX)/share
 
+# Comment to use config.h instead of config.def.h
+CONFIG_H = -DUSE_CONFIG_DEF_H
+
 XWAYLAND =
 XLIBS =
 # Uncomment to build XWayland support
