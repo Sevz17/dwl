@@ -9,6 +9,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/prctl.h>
 #include <sys/resource.h>
 #include <sys/wait.h>
 #include <time.h>
@@ -2740,6 +2741,9 @@ setup(void)
 		sigaction(sig[i], &sa, NULL);
 
 	wlr_log_init(log_level, NULL);
+
+	/* Make dwl a subreaper */
+	prctl(PR_SET_CHILD_SUBREAPER, 1);
 
 	/* The Wayland display is managed by libwayland. It handles accepting
 	 * clients from the Unix socket, manging Wayland globals, and so on. */
