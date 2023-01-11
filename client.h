@@ -336,8 +336,10 @@ client_set_fullscreen(Client *c, int fullscreen)
 }
 
 static inline uint32_t
-client_set_size(Client *c, uint32_t width, uint32_t height)
+client_set_size(Client *c, int32_t width, int32_t height)
 {
+	if (width < 0 || height < 0)
+		return 0;
 #ifdef XWAYLAND
 	if (client_is_x11(c)) {
 		wlr_xwayland_surface_configure(c->surface.xwayland,
@@ -346,7 +348,7 @@ client_set_size(Client *c, uint32_t width, uint32_t height)
 	}
 #endif
 	if (width == c->surface.xdg->toplevel->current.width
-			&& height ==c->surface.xdg->toplevel->current.height)
+			&& height == c->surface.xdg->toplevel->current.height)
 		return 0;
 	return wlr_xdg_toplevel_set_size(c->surface.xdg->toplevel, width, height);
 }

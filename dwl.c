@@ -185,7 +185,7 @@ struct Monitor {
 	unsigned int sellt;
 	unsigned int tagset[2];
 	double mfact;
-	int nmaster;
+	unsigned int nmaster;
 };
 
 typedef struct {
@@ -421,19 +421,19 @@ applybounds(Client *c, struct wlr_box *bbox)
 		c->geom.height = MAX(min.height + (2 * (int)c->bw), c->geom.height);
 		/* Some clients set them max size to INT_MAX, which does not violates
 		 * the protocol but its innecesary, they can set them max size to zero. */
-		if (max.width > 0 && !(2 * c->bw > INT_MAX - max.width)) /* Checks for overflow */
-			c->geom.width = MIN(max.width + (2 * c->bw), c->geom.width);
-		if (max.height > 0 && !(2 * c->bw > INT_MAX - max.height)) /* Checks for overflow */
-			c->geom.height = MIN(max.height + (2 * c->bw), c->geom.height);
+		if (max.width > 0 && !((signed)(2 * c->bw) > INT_MAX - max.width)) /* Checks for overflow */
+			c->geom.width = MIN((signed)(max.width + (2 * c->bw)), c->geom.width);
+		if (max.height > 0 && !((signed)(2 * c->bw) > INT_MAX - max.height)) /* Checks for overflow */
+			c->geom.height = MIN((signed)(max.height + (2 * c->bw)), c->geom.height);
 	}
 
 	if (c->geom.x >= bbox->x + bbox->width)
 		c->geom.x = bbox->x + bbox->width - c->geom.width;
 	if (c->geom.y >= bbox->y + bbox->height)
 		c->geom.y = bbox->y + bbox->height - c->geom.height;
-	if (c->geom.x + c->geom.width + 2 * c->bw <= bbox->x)
+	if ((signed)(c->geom.x + c->geom.width + 2 * c->bw) <= bbox->x)
 		c->geom.x = bbox->x;
-	if (c->geom.y + c->geom.height + 2 * c->bw <= bbox->y)
+	if ((signed)(c->geom.y + c->geom.height + 2 * c->bw) <= bbox->y)
 		c->geom.y = bbox->y;
 }
 
@@ -442,7 +442,8 @@ applyrules(Client *c)
 {
 	/* rule matching */
 	const char *appid, *title;
-	unsigned int i, newtags = 0;
+	unsigned int newtags = 0;
+	int i;
 	const Rule *r;
 	Monitor *mon = selmon, *m;
 
@@ -532,7 +533,7 @@ arrangelayers(Monitor *m)
 		arrangelayer(m, &m->layers[i], &usable_area, 0);
 
 	/* Find topmost keyboard interactive layer, if such a layer exists */
-	for (i = 0; i < LENGTH(layers_above_shell); i++) {
+	for (i = 0; i < (int)LENGTH(layers_above_shell); i++) {
 		wl_list_for_each_reverse(layersurface,
 				&m->layers[layers_above_shell[i]], link) {
 			if (!locked && layersurface->layer_surface->current.keyboard_interactive
@@ -765,8 +766,8 @@ commitnotify(struct wl_listener *listener, void *data)
 	struct wlr_box box = {0};
 	client_get_geometry(c, &box);
 
-	if (c->mon && !wlr_box_empty(&box) && (box.width != c->geom.width - 2 * c->bw
-			|| box.height != c->geom.height - 2 * c->bw))
+	if (c->mon && !wlr_box_empty(&box) && (box.width != (signed)(c->geom.width - 2 * c->bw)
+			|| box.height != (signed)(c->geom.height - 2 * c->bw)))
 		c->isfloating ? resize(c, c->geom, 1) : arrange(c->mon);
 
 	/* mark a pending resize as completed */
