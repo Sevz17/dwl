@@ -2060,7 +2060,7 @@ setlayout(const Arg *arg)
 		/* floating layout, draw borders around all clients */
 		Client *c;
 		wl_list_for_each(c, &clients, link)
-			resize(c, c->mon->m, 0, 1);
+			resize(c, c->geom, 0, 1);
 	}
 	arrange(selmon);
 	printstatus();
