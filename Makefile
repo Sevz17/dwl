@@ -9,14 +9,14 @@ DWLDEVCFLAGS = -g -pedantic -Wall -Wextra -Wdeclaration-after-statement -Wno-unu
 	-Werror=strict-prototypes -Werror=implicit -Werror=return-type -Werror=incompatible-pointer-types
 
 # CFLAGS / LDFLAGS
-PKGS      = wlroots wayland-server xkbcommon libinput $(XLIBS)
+PKGS      = wlroots wayland-server xkbcommon libinput pixman-1 $(XLIBS)
 DWLCFLAGS = `$(PKG_CONFIG) --cflags $(PKGS)` $(DWLCPPFLAGS) $(DWLDEVCFLAGS) $(CFLAGS)
-LDLIBS    = `$(PKG_CONFIG) --libs $(PKGS)` $(LIBS)
+LDLIBS    = `$(PKG_CONFIG) --libs $(PKGS)` -lm $(LIBS)
 
 all: dwl
 dwl: dwl.o util.o
 	$(CC) dwl.o util.o $(LDLIBS) $(LDFLAGS) $(DWLCFLAGS) -o $@
-dwl.o: dwl.c config.mk config.h client.h cursor-shape-v1-protocol.h xdg-shell-protocol.h wlr-layer-shell-unstable-v1-protocol.h
+dwl.o: dwl.c config.mk config.h client.h cursor-shape-v1-protocol.h xdg-shell-protocol.h wlr-layer-shell-unstable-v1-protocol.h pointer-constraints-unstable-v1-protocol.h
 util.o: util.c util.h
 
 # wayland-scanner is a tool which generates C headers and rigging for Wayland
@@ -34,6 +34,9 @@ wlr-layer-shell-unstable-v1-protocol.h:
 cursor-shape-v1-protocol.h:
 	$(WAYLAND_SCANNER) server-header \
 		$(WAYLAND_PROTOCOLS)/staging/cursor-shape/cursor-shape-v1.xml $@
+pointer-constraints-unstable-v1-protocol.h:
+	$(WAYLAND_SCANNER) server-header \
+		$(WAYLAND_PROTOCOLS)/unstable/pointer-constraints/pointer-constraints-unstable-v1.xml $@
 
 config.h:
 	cp config.def.h $@
