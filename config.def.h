@@ -6,16 +6,18 @@ static const float bordercolor[]           = {0.5, 0.5, 0.5, 1.0};
 static const float focuscolor[]            = {1.0, 0.0, 0.0, 1.0};
 /* To conform the xdg-protocol, set the alpha to zero to restore the old behavior */
 static const float fullscreen_bg[]         = {0.1, 0.1, 0.1, 1.0};
+static const float default_opacity         = 0.75;
 
 /* tagging - tagcount must be no greater than 31 */
 static const int tagcount = 9;
 
 static const Rule rules[] = {
-	/* app_id     title       tags mask     isfloating   monitor */
+	/* app_id     title       tags mask     isfloating   alpha           monitor */
 	/* examples:
-	{ "Gimp",     NULL,       0,            1,           -1 },
+	{ "Gimp",     NULL,       0,            1,           default_alpha,  -1 },
+	{ "Alacritty",NULL,       1 << 2,       0,           1.0,            -1 },
 	*/
-	{ "firefox",  NULL,       1 << 8,       0,           -1 },
+	{ "firefox",  NULL,       1 << 8,       0,           default_opacity, -1 },
 };
 
 /* layout(s) */
@@ -117,6 +119,8 @@ static const Key keys[] = {
 	{ MODKEY,                    XKB_KEY_d,          incnmaster,     {.i = -1} },
 	{ MODKEY,                    XKB_KEY_h,          setmfact,       {.f = -0.05} },
 	{ MODKEY,                    XKB_KEY_l,          setmfact,       {.f = +0.05} },
+	{ MODKEY,                    XKB_KEY_o,          setopacity,     {.f = +0.1} },
+	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_O,          setopacity,     {.f = -0.1} },
 	{ MODKEY,                    XKB_KEY_Return,     zoom,           {0} },
 	{ MODKEY,                    XKB_KEY_Tab,        view,           {0} },
 	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_C,          killclient,     {0} },
