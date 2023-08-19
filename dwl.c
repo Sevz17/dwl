@@ -2730,10 +2730,13 @@ void
 activatex11(struct wl_listener *listener, void *data)
 {
 	Client *c = wl_container_of(listener, c, activate);
+	Client *sel = focustop(selmon);
 
-	/* Only "managed" windows can be activated */
-	if (c->type == X11Managed)
-		wlr_xwayland_surface_activate(c->surface.xwayland, 1);
+	if ((!c->surface.xwayland->surface || !c->surface.xwayland->surface->mapped)
+		|| (sel && sel->type != XDGShell && sel->surface.xwayland->pid != c->surface.xwayland->pid))
+		return;
+
+	focusclient(c, 1);
 }
 
 void
