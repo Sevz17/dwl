@@ -2824,17 +2824,19 @@ void
 setoverrideredirect(struct wl_listener *listener, void *data)
 {
 	Client *c = wl_container_of(listener, c, override_redirect);
-	int type = c->surface.xwayland->override_redirect ? X11Unmanaged : X11Managed;
-	if (!client_surface(c) || !client_surface(c)->mapped) {
-		c->type = type;
-		return;
-	}
-	/* We already check that this client is mapped */
-	if (type != c->type) {
-		wl_signal_emit_mutable(&client_surface(c)->events.unmap, NULL);
-		c->type = type;
-		wl_signal_emit_mutable(&client_surface(c)->events.map, NULL);
-	}
+	struct wlr_xwayland_surface *xsurface = c->surface.xwayland;
+	int mapped = xsurface->surface && xsurface->surface->mapped;
+
+	if (mapped)
+		unmapnotify(&c->unmap, NULL);
+
+	destroynotify(&c->destroy, NULL);
+	xsurface->data = NULL;
+	createnotifyx11(NULL, xsurface);
+	c = xsurface->data;
+
+	if (mapped)
+		mapnotify(&c->map, xsurface);
 }
 
 void
